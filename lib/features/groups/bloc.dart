@@ -190,7 +190,11 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
         data: CreateGroupInput(name: name, createdById: user.id),
       );
       await db.groupMembership.create(
-        data: CreateGroupMembershipInput(groupId: group.id, userId: user.id),
+        data: CreateGroupMembershipInput(
+          groupId: group.id,
+          userId: user.id,
+          rotationOrder: 1,
+        ),
       );
       final groups = await _loadGroupsForUser(user.id);
       final prefs = await SharedPreferences.getInstance();
@@ -280,6 +284,7 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
         data: CreateGroupMembershipInput(
           groupId: event.groupId,
           userId: user.id,
+          rotationOrder: await _nextRotationOrder(event.groupId),
         ),
       );
       final members = await _loadMembers(event.groupId);
@@ -314,6 +319,19 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
     return db.user.findUnique(
       where: UserWhereUniqueInput(id: group.createdById),
     );
+  }
+
+  /// Returns the next rotation slot for a freshly invited member: append to
+  /// the end of the existing order so the round-robin keeps working.
+  Future<int> _nextRotationOrder(String groupId) async {
+    final memberships = await db.groupMembership.findMany(
+      where: GroupMembershipWhereInput(groupId: StringFilter(equals: groupId)),
+    );
+    if (memberships.isEmpty) return 1;
+    final maxOrder = memberships
+        .map((m) => m.rotationOrder)
+        .fold<int>(0, (a, b) => a > b ? a : b);
+    return maxOrder + 1;
   }
 
   Future<List<User>> _loadMembers(String groupId) async {
