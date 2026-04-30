@@ -15,6 +15,8 @@ class GroupMembership with _$GroupMembership {
     required String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) User? user,
     required DateTime joinedAt,
+    @Default(0) int rotationOrder,
+    @Default(true) bool rotationActive,
   }) = _GroupMembership;
 
   factory GroupMembership.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,8 @@ class GroupMembership with _$GroupMembership {
       joinedAt: json['joinedAt'] is DateTime
           ? json['joinedAt'] as DateTime
           : DateTime.parse(json['joinedAt'] as String),
+      rotationOrder: (json['rotationOrder'] as num?)?.toInt() ?? 0,
+      rotationActive: (json['rotationActive'] as bool?) ?? true,
     );
   }
 
@@ -34,6 +38,8 @@ class GroupMembership with _$GroupMembership {
       'groupId': groupId,
       'userId': userId,
       'joinedAt': joinedAt.toIso8601String(),
+      'rotationOrder': rotationOrder,
+      'rotationActive': rotationActive,
     };
   }
 }
@@ -46,6 +52,8 @@ class CreateGroupMembershipInput with _$CreateGroupMembershipInput {
   const factory CreateGroupMembershipInput({
     required String groupId,
     required String userId,
+    @Default(0) int? rotationOrder,
+    @Default(true) bool? rotationActive,
   }) = _CreateGroupMembershipInput;
 
   factory CreateGroupMembershipInput.fromJson(Map<String, dynamic> json) {
@@ -53,7 +61,12 @@ class CreateGroupMembershipInput with _$CreateGroupMembershipInput {
   }
 
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{'groupId': groupId, 'userId': userId};
+    return <String, dynamic>{
+      'groupId': groupId,
+      'userId': userId,
+      if (rotationOrder != null) 'rotationOrder': rotationOrder,
+      if (rotationActive != null) 'rotationActive': rotationActive,
+    };
   }
 }
 
@@ -62,8 +75,12 @@ class CreateGroupMembershipInput with _$CreateGroupMembershipInput {
 class UpdateGroupMembershipInput with _$UpdateGroupMembershipInput {
   const UpdateGroupMembershipInput._();
 
-  const factory UpdateGroupMembershipInput({String? groupId, String? userId}) =
-      _UpdateGroupMembershipInput;
+  const factory UpdateGroupMembershipInput({
+    String? groupId,
+    String? userId,
+    int? rotationOrder,
+    bool? rotationActive,
+  }) = _UpdateGroupMembershipInput;
 
   factory UpdateGroupMembershipInput.fromJson(Map<String, dynamic> json) {
     throw UnimplementedError('UpdateGroupMembershipInput.fromJson not needed');
@@ -73,6 +90,8 @@ class UpdateGroupMembershipInput with _$UpdateGroupMembershipInput {
     return <String, dynamic>{
       if (groupId != null) 'groupId': groupId,
       if (userId != null) 'userId': userId,
+      if (rotationOrder != null) 'rotationOrder': rotationOrder,
+      if (rotationActive != null) 'rotationActive': rotationActive,
     };
   }
 }
@@ -106,6 +125,8 @@ class GroupMembershipWhereInput with _$GroupMembershipWhereInput {
     StringFilter? userId,
     UserRelationFilter? user,
     DateTimeFilter? joinedAt,
+    IntFilter? rotationOrder,
+    BooleanFilter? rotationActive,
     List<GroupMembershipWhereInput>? AND,
     List<GroupMembershipWhereInput>? OR,
     GroupMembershipWhereInput? NOT,
@@ -123,6 +144,8 @@ class GroupMembershipWhereInput with _$GroupMembershipWhereInput {
       if (userId != null) 'userId': userId!.toJson(),
       if (user != null) 'user': user!.toJson(),
       if (joinedAt != null) 'joinedAt': joinedAt!.toJson(),
+      if (rotationOrder != null) 'rotationOrder': rotationOrder!.toJson(),
+      if (rotationActive != null) 'rotationActive': rotationActive!.toJson(),
       if (AND != null) 'AND': AND!.map((e) => e.toJson()).toList(),
       if (OR != null) 'OR': OR!.map((e) => e.toJson()).toList(),
       if (NOT != null) 'NOT': NOT!.toJson(),
@@ -190,6 +213,8 @@ class GroupMembershipOrderByInput with _$GroupMembershipOrderByInput {
     SortOrder? groupId,
     SortOrder? userId,
     SortOrder? joinedAt,
+    SortOrder? rotationOrder,
+    SortOrder? rotationActive,
   }) = _GroupMembershipOrderByInput;
 
   factory GroupMembershipOrderByInput.fromJson(Map<String, dynamic> json) {
@@ -202,6 +227,8 @@ class GroupMembershipOrderByInput with _$GroupMembershipOrderByInput {
       if (groupId != null) 'groupId': groupId!.name,
       if (userId != null) 'userId': userId!.name,
       if (joinedAt != null) 'joinedAt': joinedAt!.name,
+      if (rotationOrder != null) 'rotationOrder': rotationOrder!.name,
+      if (rotationActive != null) 'rotationActive': rotationActive!.name,
     };
   }
 }

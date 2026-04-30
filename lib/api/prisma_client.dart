@@ -80,10 +80,12 @@ final _createTableStatements = <String>[
   )''',
   '''
   CREATE TABLE IF NOT EXISTS "GroupMembership" (
-    "id"       $_idDefault,
-    "groupId"  TEXT NOT NULL,
-    "userId"   TEXT NOT NULL,
-    "joinedAt" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id"             $_idDefault,
+    "groupId"        TEXT NOT NULL,
+    "userId"         TEXT NOT NULL,
+    "joinedAt"       TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "rotationOrder"  INTEGER NOT NULL DEFAULT 0,
+    "rotationActive" INTEGER NOT NULL DEFAULT 1,
     UNIQUE ("groupId", "userId")
   )''',
   '''
@@ -101,7 +103,8 @@ final _createTableStatements = <String>[
     "sessionId"    TEXT NOT NULL,
     "proposedById" TEXT NOT NULL,
     "title"        TEXT NOT NULL,
-    "description"  TEXT NOT NULL
+    "description"  TEXT NOT NULL,
+    UNIQUE ("sessionId", "title")
   )''',
   '''
   CREATE TABLE IF NOT EXISTS "GameVote" (

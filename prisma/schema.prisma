@@ -39,12 +39,14 @@ model Group {
 }
 
 model GroupMembership {
-  id       String   @id @default(cuid())
-  groupId  String
-  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User     @relation(fields: [userId], references: [id])
-  joinedAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  groupId        String
+  group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  joinedAt       DateTime @default(now())
+  rotationOrder  Int      @default(0)
+  rotationActive Boolean  @default(true)
 
   @@unique([groupId, userId])
 }
@@ -74,6 +76,8 @@ model GameProposal {
   title       String
   description String
   votes       GameVote[]
+
+  @@unique([sessionId, title])
 }
 
 model GameVote {

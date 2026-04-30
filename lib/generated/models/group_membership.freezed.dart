@@ -25,6 +25,8 @@ mixin _$GroupMembership {
   @JsonKey(includeFromJson: false, includeToJson: false)
   User? get user => throw _privateConstructorUsedError;
   DateTime get joinedAt => throw _privateConstructorUsedError;
+  int get rotationOrder => throw _privateConstructorUsedError;
+  bool get rotationActive => throw _privateConstructorUsedError;
 
   /// Create a copy of GroupMembership
   /// with the given fields replaced by the non-null parameter values.
@@ -47,6 +49,8 @@ abstract class $GroupMembershipCopyWith<$Res> {
     String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) User? user,
     DateTime joinedAt,
+    int rotationOrder,
+    bool rotationActive,
   });
 
   $GroupCopyWith<$Res>? get group;
@@ -74,6 +78,8 @@ class _$GroupMembershipCopyWithImpl<$Res, $Val extends GroupMembership>
     Object? userId = null,
     Object? user = freezed,
     Object? joinedAt = null,
+    Object? rotationOrder = null,
+    Object? rotationActive = null,
   }) {
     return _then(
       _value.copyWith(
@@ -101,6 +107,14 @@ class _$GroupMembershipCopyWithImpl<$Res, $Val extends GroupMembership>
                 ? _value.joinedAt
                 : joinedAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            rotationOrder: null == rotationOrder
+                ? _value.rotationOrder
+                : rotationOrder // ignore: cast_nullable_to_non_nullable
+                      as int,
+            rotationActive: null == rotationActive
+                ? _value.rotationActive
+                : rotationActive // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -151,6 +165,8 @@ abstract class _$$GroupMembershipImplCopyWith<$Res>
     String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) User? user,
     DateTime joinedAt,
+    int rotationOrder,
+    bool rotationActive,
   });
 
   @override
@@ -179,6 +195,8 @@ class __$$GroupMembershipImplCopyWithImpl<$Res>
     Object? userId = null,
     Object? user = freezed,
     Object? joinedAt = null,
+    Object? rotationOrder = null,
+    Object? rotationActive = null,
   }) {
     return _then(
       _$GroupMembershipImpl(
@@ -206,6 +224,14 @@ class __$$GroupMembershipImplCopyWithImpl<$Res>
             ? _value.joinedAt
             : joinedAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        rotationOrder: null == rotationOrder
+            ? _value.rotationOrder
+            : rotationOrder // ignore: cast_nullable_to_non_nullable
+                  as int,
+        rotationActive: null == rotationActive
+            ? _value.rotationActive
+            : rotationActive // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -221,6 +247,8 @@ class _$GroupMembershipImpl extends _GroupMembership {
     required this.userId,
     @JsonKey(includeFromJson: false, includeToJson: false) this.user,
     required this.joinedAt,
+    this.rotationOrder = 0,
+    this.rotationActive = true,
   }) : super._();
 
   @override
@@ -237,10 +265,16 @@ class _$GroupMembershipImpl extends _GroupMembership {
   final User? user;
   @override
   final DateTime joinedAt;
+  @override
+  @JsonKey()
+  final int rotationOrder;
+  @override
+  @JsonKey()
+  final bool rotationActive;
 
   @override
   String toString() {
-    return 'GroupMembership(id: $id, groupId: $groupId, group: $group, userId: $userId, user: $user, joinedAt: $joinedAt)';
+    return 'GroupMembership(id: $id, groupId: $groupId, group: $group, userId: $userId, user: $user, joinedAt: $joinedAt, rotationOrder: $rotationOrder, rotationActive: $rotationActive)';
   }
 
   @override
@@ -254,12 +288,25 @@ class _$GroupMembershipImpl extends _GroupMembership {
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.user, user) || other.user == user) &&
             (identical(other.joinedAt, joinedAt) ||
-                other.joinedAt == joinedAt));
+                other.joinedAt == joinedAt) &&
+            (identical(other.rotationOrder, rotationOrder) ||
+                other.rotationOrder == rotationOrder) &&
+            (identical(other.rotationActive, rotationActive) ||
+                other.rotationActive == rotationActive));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, groupId, group, userId, user, joinedAt);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    groupId,
+    group,
+    userId,
+    user,
+    joinedAt,
+    rotationOrder,
+    rotationActive,
+  );
 
   /// Create a copy of GroupMembership
   /// with the given fields replaced by the non-null parameter values.
@@ -281,6 +328,8 @@ abstract class _GroupMembership extends GroupMembership {
     required final String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) final User? user,
     required final DateTime joinedAt,
+    final int rotationOrder,
+    final bool rotationActive,
   }) = _$GroupMembershipImpl;
   const _GroupMembership._() : super._();
 
@@ -298,6 +347,10 @@ abstract class _GroupMembership extends GroupMembership {
   User? get user;
   @override
   DateTime get joinedAt;
+  @override
+  int get rotationOrder;
+  @override
+  bool get rotationActive;
 
   /// Create a copy of GroupMembership
   /// with the given fields replaced by the non-null parameter values.
@@ -311,6 +364,8 @@ abstract class _GroupMembership extends GroupMembership {
 mixin _$CreateGroupMembershipInput {
   String get groupId => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
+  int? get rotationOrder => throw _privateConstructorUsedError;
+  bool? get rotationActive => throw _privateConstructorUsedError;
 
   /// Create a copy of CreateGroupMembershipInput
   /// with the given fields replaced by the non-null parameter values.
@@ -330,7 +385,12 @@ abstract class $CreateGroupMembershipInputCopyWith<$Res> {
         CreateGroupMembershipInput
       >;
   @useResult
-  $Res call({String groupId, String userId});
+  $Res call({
+    String groupId,
+    String userId,
+    int? rotationOrder,
+    bool? rotationActive,
+  });
 }
 
 /// @nodoc
@@ -350,7 +410,12 @@ class _$CreateGroupMembershipInputCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? groupId = null, Object? userId = null}) {
+  $Res call({
+    Object? groupId = null,
+    Object? userId = null,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
+  }) {
     return _then(
       _value.copyWith(
             groupId: null == groupId
@@ -361,6 +426,14 @@ class _$CreateGroupMembershipInputCopyWithImpl<
                 ? _value.userId
                 : userId // ignore: cast_nullable_to_non_nullable
                       as String,
+            rotationOrder: freezed == rotationOrder
+                ? _value.rotationOrder
+                : rotationOrder // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            rotationActive: freezed == rotationActive
+                ? _value.rotationActive
+                : rotationActive // ignore: cast_nullable_to_non_nullable
+                      as bool?,
           )
           as $Val,
     );
@@ -376,7 +449,12 @@ abstract class _$$CreateGroupMembershipInputImplCopyWith<$Res>
   ) = __$$CreateGroupMembershipInputImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String groupId, String userId});
+  $Res call({
+    String groupId,
+    String userId,
+    int? rotationOrder,
+    bool? rotationActive,
+  });
 }
 
 /// @nodoc
@@ -396,7 +474,12 @@ class __$$CreateGroupMembershipInputImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? groupId = null, Object? userId = null}) {
+  $Res call({
+    Object? groupId = null,
+    Object? userId = null,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
+  }) {
     return _then(
       _$CreateGroupMembershipInputImpl(
         groupId: null == groupId
@@ -407,6 +490,14 @@ class __$$CreateGroupMembershipInputImplCopyWithImpl<$Res>
             ? _value.userId
             : userId // ignore: cast_nullable_to_non_nullable
                   as String,
+        rotationOrder: freezed == rotationOrder
+            ? _value.rotationOrder
+            : rotationOrder // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        rotationActive: freezed == rotationActive
+            ? _value.rotationActive
+            : rotationActive // ignore: cast_nullable_to_non_nullable
+                  as bool?,
       ),
     );
   }
@@ -418,16 +509,24 @@ class _$CreateGroupMembershipInputImpl extends _CreateGroupMembershipInput {
   const _$CreateGroupMembershipInputImpl({
     required this.groupId,
     required this.userId,
+    this.rotationOrder = 0,
+    this.rotationActive = true,
   }) : super._();
 
   @override
   final String groupId;
   @override
   final String userId;
+  @override
+  @JsonKey()
+  final int? rotationOrder;
+  @override
+  @JsonKey()
+  final bool? rotationActive;
 
   @override
   String toString() {
-    return 'CreateGroupMembershipInput(groupId: $groupId, userId: $userId)';
+    return 'CreateGroupMembershipInput(groupId: $groupId, userId: $userId, rotationOrder: $rotationOrder, rotationActive: $rotationActive)';
   }
 
   @override
@@ -436,11 +535,16 @@ class _$CreateGroupMembershipInputImpl extends _CreateGroupMembershipInput {
         (other.runtimeType == runtimeType &&
             other is _$CreateGroupMembershipInputImpl &&
             (identical(other.groupId, groupId) || other.groupId == groupId) &&
-            (identical(other.userId, userId) || other.userId == userId));
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.rotationOrder, rotationOrder) ||
+                other.rotationOrder == rotationOrder) &&
+            (identical(other.rotationActive, rotationActive) ||
+                other.rotationActive == rotationActive));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, groupId, userId);
+  int get hashCode =>
+      Object.hash(runtimeType, groupId, userId, rotationOrder, rotationActive);
 
   /// Create a copy of CreateGroupMembershipInput
   /// with the given fields replaced by the non-null parameter values.
@@ -458,6 +562,8 @@ abstract class _CreateGroupMembershipInput extends CreateGroupMembershipInput {
   const factory _CreateGroupMembershipInput({
     required final String groupId,
     required final String userId,
+    final int? rotationOrder,
+    final bool? rotationActive,
   }) = _$CreateGroupMembershipInputImpl;
   const _CreateGroupMembershipInput._() : super._();
 
@@ -465,6 +571,10 @@ abstract class _CreateGroupMembershipInput extends CreateGroupMembershipInput {
   String get groupId;
   @override
   String get userId;
+  @override
+  int? get rotationOrder;
+  @override
+  bool? get rotationActive;
 
   /// Create a copy of CreateGroupMembershipInput
   /// with the given fields replaced by the non-null parameter values.
@@ -478,6 +588,8 @@ abstract class _CreateGroupMembershipInput extends CreateGroupMembershipInput {
 mixin _$UpdateGroupMembershipInput {
   String? get groupId => throw _privateConstructorUsedError;
   String? get userId => throw _privateConstructorUsedError;
+  int? get rotationOrder => throw _privateConstructorUsedError;
+  bool? get rotationActive => throw _privateConstructorUsedError;
 
   /// Create a copy of UpdateGroupMembershipInput
   /// with the given fields replaced by the non-null parameter values.
@@ -497,7 +609,12 @@ abstract class $UpdateGroupMembershipInputCopyWith<$Res> {
         UpdateGroupMembershipInput
       >;
   @useResult
-  $Res call({String? groupId, String? userId});
+  $Res call({
+    String? groupId,
+    String? userId,
+    int? rotationOrder,
+    bool? rotationActive,
+  });
 }
 
 /// @nodoc
@@ -517,7 +634,12 @@ class _$UpdateGroupMembershipInputCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? groupId = freezed, Object? userId = freezed}) {
+  $Res call({
+    Object? groupId = freezed,
+    Object? userId = freezed,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
+  }) {
     return _then(
       _value.copyWith(
             groupId: freezed == groupId
@@ -528,6 +650,14 @@ class _$UpdateGroupMembershipInputCopyWithImpl<
                 ? _value.userId
                 : userId // ignore: cast_nullable_to_non_nullable
                       as String?,
+            rotationOrder: freezed == rotationOrder
+                ? _value.rotationOrder
+                : rotationOrder // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            rotationActive: freezed == rotationActive
+                ? _value.rotationActive
+                : rotationActive // ignore: cast_nullable_to_non_nullable
+                      as bool?,
           )
           as $Val,
     );
@@ -543,7 +673,12 @@ abstract class _$$UpdateGroupMembershipInputImplCopyWith<$Res>
   ) = __$$UpdateGroupMembershipInputImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String? groupId, String? userId});
+  $Res call({
+    String? groupId,
+    String? userId,
+    int? rotationOrder,
+    bool? rotationActive,
+  });
 }
 
 /// @nodoc
@@ -563,7 +698,12 @@ class __$$UpdateGroupMembershipInputImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? groupId = freezed, Object? userId = freezed}) {
+  $Res call({
+    Object? groupId = freezed,
+    Object? userId = freezed,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
+  }) {
     return _then(
       _$UpdateGroupMembershipInputImpl(
         groupId: freezed == groupId
@@ -574,6 +714,14 @@ class __$$UpdateGroupMembershipInputImplCopyWithImpl<$Res>
             ? _value.userId
             : userId // ignore: cast_nullable_to_non_nullable
                   as String?,
+        rotationOrder: freezed == rotationOrder
+            ? _value.rotationOrder
+            : rotationOrder // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        rotationActive: freezed == rotationActive
+            ? _value.rotationActive
+            : rotationActive // ignore: cast_nullable_to_non_nullable
+                  as bool?,
       ),
     );
   }
@@ -582,17 +730,25 @@ class __$$UpdateGroupMembershipInputImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$UpdateGroupMembershipInputImpl extends _UpdateGroupMembershipInput {
-  const _$UpdateGroupMembershipInputImpl({this.groupId, this.userId})
-    : super._();
+  const _$UpdateGroupMembershipInputImpl({
+    this.groupId,
+    this.userId,
+    this.rotationOrder,
+    this.rotationActive,
+  }) : super._();
 
   @override
   final String? groupId;
   @override
   final String? userId;
+  @override
+  final int? rotationOrder;
+  @override
+  final bool? rotationActive;
 
   @override
   String toString() {
-    return 'UpdateGroupMembershipInput(groupId: $groupId, userId: $userId)';
+    return 'UpdateGroupMembershipInput(groupId: $groupId, userId: $userId, rotationOrder: $rotationOrder, rotationActive: $rotationActive)';
   }
 
   @override
@@ -601,11 +757,16 @@ class _$UpdateGroupMembershipInputImpl extends _UpdateGroupMembershipInput {
         (other.runtimeType == runtimeType &&
             other is _$UpdateGroupMembershipInputImpl &&
             (identical(other.groupId, groupId) || other.groupId == groupId) &&
-            (identical(other.userId, userId) || other.userId == userId));
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.rotationOrder, rotationOrder) ||
+                other.rotationOrder == rotationOrder) &&
+            (identical(other.rotationActive, rotationActive) ||
+                other.rotationActive == rotationActive));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, groupId, userId);
+  int get hashCode =>
+      Object.hash(runtimeType, groupId, userId, rotationOrder, rotationActive);
 
   /// Create a copy of UpdateGroupMembershipInput
   /// with the given fields replaced by the non-null parameter values.
@@ -623,6 +784,8 @@ abstract class _UpdateGroupMembershipInput extends UpdateGroupMembershipInput {
   const factory _UpdateGroupMembershipInput({
     final String? groupId,
     final String? userId,
+    final int? rotationOrder,
+    final bool? rotationActive,
   }) = _$UpdateGroupMembershipInputImpl;
   const _UpdateGroupMembershipInput._() : super._();
 
@@ -630,6 +793,10 @@ abstract class _UpdateGroupMembershipInput extends UpdateGroupMembershipInput {
   String? get groupId;
   @override
   String? get userId;
+  @override
+  int? get rotationOrder;
+  @override
+  bool? get rotationActive;
 
   /// Create a copy of UpdateGroupMembershipInput
   /// with the given fields replaced by the non-null parameter values.
@@ -801,6 +968,8 @@ mixin _$GroupMembershipWhereInput {
   StringFilter? get userId => throw _privateConstructorUsedError;
   UserRelationFilter? get user => throw _privateConstructorUsedError;
   DateTimeFilter? get joinedAt => throw _privateConstructorUsedError;
+  IntFilter? get rotationOrder => throw _privateConstructorUsedError;
+  BooleanFilter? get rotationActive => throw _privateConstructorUsedError;
   List<GroupMembershipWhereInput>? get AND =>
       throw _privateConstructorUsedError;
   List<GroupMembershipWhereInput>? get OR => throw _privateConstructorUsedError;
@@ -827,6 +996,8 @@ abstract class $GroupMembershipWhereInputCopyWith<$Res> {
     StringFilter? userId,
     UserRelationFilter? user,
     DateTimeFilter? joinedAt,
+    IntFilter? rotationOrder,
+    BooleanFilter? rotationActive,
     List<GroupMembershipWhereInput>? AND,
     List<GroupMembershipWhereInput>? OR,
     GroupMembershipWhereInput? NOT,
@@ -838,6 +1009,8 @@ abstract class $GroupMembershipWhereInputCopyWith<$Res> {
   $StringFilterCopyWith<$Res>? get userId;
   $UserRelationFilterCopyWith<$Res>? get user;
   $DateTimeFilterCopyWith<$Res>? get joinedAt;
+  $IntFilterCopyWith<$Res>? get rotationOrder;
+  $BooleanFilterCopyWith<$Res>? get rotationActive;
   $GroupMembershipWhereInputCopyWith<$Res>? get NOT;
 }
 
@@ -865,6 +1038,8 @@ class _$GroupMembershipWhereInputCopyWithImpl<
     Object? userId = freezed,
     Object? user = freezed,
     Object? joinedAt = freezed,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
     Object? AND = freezed,
     Object? OR = freezed,
     Object? NOT = freezed,
@@ -895,6 +1070,14 @@ class _$GroupMembershipWhereInputCopyWithImpl<
                 ? _value.joinedAt
                 : joinedAt // ignore: cast_nullable_to_non_nullable
                       as DateTimeFilter?,
+            rotationOrder: freezed == rotationOrder
+                ? _value.rotationOrder
+                : rotationOrder // ignore: cast_nullable_to_non_nullable
+                      as IntFilter?,
+            rotationActive: freezed == rotationActive
+                ? _value.rotationActive
+                : rotationActive // ignore: cast_nullable_to_non_nullable
+                      as BooleanFilter?,
             AND: freezed == AND
                 ? _value.AND
                 : AND // ignore: cast_nullable_to_non_nullable
@@ -1000,6 +1183,34 @@ class _$GroupMembershipWhereInputCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $IntFilterCopyWith<$Res>? get rotationOrder {
+    if (_value.rotationOrder == null) {
+      return null;
+    }
+
+    return $IntFilterCopyWith<$Res>(_value.rotationOrder!, (value) {
+      return _then(_value.copyWith(rotationOrder: value) as $Val);
+    });
+  }
+
+  /// Create a copy of GroupMembershipWhereInput
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $BooleanFilterCopyWith<$Res>? get rotationActive {
+    if (_value.rotationActive == null) {
+      return null;
+    }
+
+    return $BooleanFilterCopyWith<$Res>(_value.rotationActive!, (value) {
+      return _then(_value.copyWith(rotationActive: value) as $Val);
+    });
+  }
+
+  /// Create a copy of GroupMembershipWhereInput
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $GroupMembershipWhereInputCopyWith<$Res>? get NOT {
     if (_value.NOT == null) {
       return null;
@@ -1027,6 +1238,8 @@ abstract class _$$GroupMembershipWhereInputImplCopyWith<$Res>
     StringFilter? userId,
     UserRelationFilter? user,
     DateTimeFilter? joinedAt,
+    IntFilter? rotationOrder,
+    BooleanFilter? rotationActive,
     List<GroupMembershipWhereInput>? AND,
     List<GroupMembershipWhereInput>? OR,
     GroupMembershipWhereInput? NOT,
@@ -1044,6 +1257,10 @@ abstract class _$$GroupMembershipWhereInputImplCopyWith<$Res>
   $UserRelationFilterCopyWith<$Res>? get user;
   @override
   $DateTimeFilterCopyWith<$Res>? get joinedAt;
+  @override
+  $IntFilterCopyWith<$Res>? get rotationOrder;
+  @override
+  $BooleanFilterCopyWith<$Res>? get rotationActive;
   @override
   $GroupMembershipWhereInputCopyWith<$Res>? get NOT;
 }
@@ -1072,6 +1289,8 @@ class __$$GroupMembershipWhereInputImplCopyWithImpl<$Res>
     Object? userId = freezed,
     Object? user = freezed,
     Object? joinedAt = freezed,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
     Object? AND = freezed,
     Object? OR = freezed,
     Object? NOT = freezed,
@@ -1102,6 +1321,14 @@ class __$$GroupMembershipWhereInputImplCopyWithImpl<$Res>
             ? _value.joinedAt
             : joinedAt // ignore: cast_nullable_to_non_nullable
                   as DateTimeFilter?,
+        rotationOrder: freezed == rotationOrder
+            ? _value.rotationOrder
+            : rotationOrder // ignore: cast_nullable_to_non_nullable
+                  as IntFilter?,
+        rotationActive: freezed == rotationActive
+            ? _value.rotationActive
+            : rotationActive // ignore: cast_nullable_to_non_nullable
+                  as BooleanFilter?,
         AND: freezed == AND
             ? _value._AND
             : AND // ignore: cast_nullable_to_non_nullable
@@ -1129,6 +1356,8 @@ class _$GroupMembershipWhereInputImpl extends _GroupMembershipWhereInput {
     this.userId,
     this.user,
     this.joinedAt,
+    this.rotationOrder,
+    this.rotationActive,
     final List<GroupMembershipWhereInput>? AND,
     final List<GroupMembershipWhereInput>? OR,
     this.NOT,
@@ -1148,6 +1377,10 @@ class _$GroupMembershipWhereInputImpl extends _GroupMembershipWhereInput {
   final UserRelationFilter? user;
   @override
   final DateTimeFilter? joinedAt;
+  @override
+  final IntFilter? rotationOrder;
+  @override
+  final BooleanFilter? rotationActive;
   final List<GroupMembershipWhereInput>? _AND;
   @override
   List<GroupMembershipWhereInput>? get AND {
@@ -1173,7 +1406,7 @@ class _$GroupMembershipWhereInputImpl extends _GroupMembershipWhereInput {
 
   @override
   String toString() {
-    return 'GroupMembershipWhereInput(id: $id, groupId: $groupId, group: $group, userId: $userId, user: $user, joinedAt: $joinedAt, AND: $AND, OR: $OR, NOT: $NOT)';
+    return 'GroupMembershipWhereInput(id: $id, groupId: $groupId, group: $group, userId: $userId, user: $user, joinedAt: $joinedAt, rotationOrder: $rotationOrder, rotationActive: $rotationActive, AND: $AND, OR: $OR, NOT: $NOT)';
   }
 
   @override
@@ -1188,6 +1421,10 @@ class _$GroupMembershipWhereInputImpl extends _GroupMembershipWhereInput {
             (identical(other.user, user) || other.user == user) &&
             (identical(other.joinedAt, joinedAt) ||
                 other.joinedAt == joinedAt) &&
+            (identical(other.rotationOrder, rotationOrder) ||
+                other.rotationOrder == rotationOrder) &&
+            (identical(other.rotationActive, rotationActive) ||
+                other.rotationActive == rotationActive) &&
             const DeepCollectionEquality().equals(other._AND, _AND) &&
             const DeepCollectionEquality().equals(other._OR, _OR) &&
             (identical(other.NOT, NOT) || other.NOT == NOT));
@@ -1202,6 +1439,8 @@ class _$GroupMembershipWhereInputImpl extends _GroupMembershipWhereInput {
     userId,
     user,
     joinedAt,
+    rotationOrder,
+    rotationActive,
     const DeepCollectionEquality().hash(_AND),
     const DeepCollectionEquality().hash(_OR),
     NOT,
@@ -1227,6 +1466,8 @@ abstract class _GroupMembershipWhereInput extends GroupMembershipWhereInput {
     final StringFilter? userId,
     final UserRelationFilter? user,
     final DateTimeFilter? joinedAt,
+    final IntFilter? rotationOrder,
+    final BooleanFilter? rotationActive,
     final List<GroupMembershipWhereInput>? AND,
     final List<GroupMembershipWhereInput>? OR,
     final GroupMembershipWhereInput? NOT,
@@ -1245,6 +1486,10 @@ abstract class _GroupMembershipWhereInput extends GroupMembershipWhereInput {
   UserRelationFilter? get user;
   @override
   DateTimeFilter? get joinedAt;
+  @override
+  IntFilter? get rotationOrder;
+  @override
+  BooleanFilter? get rotationActive;
   @override
   List<GroupMembershipWhereInput>? get AND;
   @override
@@ -1742,6 +1987,8 @@ mixin _$GroupMembershipOrderByInput {
   SortOrder? get groupId => throw _privateConstructorUsedError;
   SortOrder? get userId => throw _privateConstructorUsedError;
   SortOrder? get joinedAt => throw _privateConstructorUsedError;
+  SortOrder? get rotationOrder => throw _privateConstructorUsedError;
+  SortOrder? get rotationActive => throw _privateConstructorUsedError;
 
   /// Create a copy of GroupMembershipOrderByInput
   /// with the given fields replaced by the non-null parameter values.
@@ -1766,6 +2013,8 @@ abstract class $GroupMembershipOrderByInputCopyWith<$Res> {
     SortOrder? groupId,
     SortOrder? userId,
     SortOrder? joinedAt,
+    SortOrder? rotationOrder,
+    SortOrder? rotationActive,
   });
 }
 
@@ -1791,6 +2040,8 @@ class _$GroupMembershipOrderByInputCopyWithImpl<
     Object? groupId = freezed,
     Object? userId = freezed,
     Object? joinedAt = freezed,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1809,6 +2060,14 @@ class _$GroupMembershipOrderByInputCopyWithImpl<
             joinedAt: freezed == joinedAt
                 ? _value.joinedAt
                 : joinedAt // ignore: cast_nullable_to_non_nullable
+                      as SortOrder?,
+            rotationOrder: freezed == rotationOrder
+                ? _value.rotationOrder
+                : rotationOrder // ignore: cast_nullable_to_non_nullable
+                      as SortOrder?,
+            rotationActive: freezed == rotationActive
+                ? _value.rotationActive
+                : rotationActive // ignore: cast_nullable_to_non_nullable
                       as SortOrder?,
           )
           as $Val,
@@ -1830,6 +2089,8 @@ abstract class _$$GroupMembershipOrderByInputImplCopyWith<$Res>
     SortOrder? groupId,
     SortOrder? userId,
     SortOrder? joinedAt,
+    SortOrder? rotationOrder,
+    SortOrder? rotationActive,
   });
 }
 
@@ -1855,6 +2116,8 @@ class __$$GroupMembershipOrderByInputImplCopyWithImpl<$Res>
     Object? groupId = freezed,
     Object? userId = freezed,
     Object? joinedAt = freezed,
+    Object? rotationOrder = freezed,
+    Object? rotationActive = freezed,
   }) {
     return _then(
       _$GroupMembershipOrderByInputImpl(
@@ -1874,6 +2137,14 @@ class __$$GroupMembershipOrderByInputImplCopyWithImpl<$Res>
             ? _value.joinedAt
             : joinedAt // ignore: cast_nullable_to_non_nullable
                   as SortOrder?,
+        rotationOrder: freezed == rotationOrder
+            ? _value.rotationOrder
+            : rotationOrder // ignore: cast_nullable_to_non_nullable
+                  as SortOrder?,
+        rotationActive: freezed == rotationActive
+            ? _value.rotationActive
+            : rotationActive // ignore: cast_nullable_to_non_nullable
+                  as SortOrder?,
       ),
     );
   }
@@ -1887,6 +2158,8 @@ class _$GroupMembershipOrderByInputImpl extends _GroupMembershipOrderByInput {
     this.groupId,
     this.userId,
     this.joinedAt,
+    this.rotationOrder,
+    this.rotationActive,
   }) : super._();
 
   @override
@@ -1897,10 +2170,14 @@ class _$GroupMembershipOrderByInputImpl extends _GroupMembershipOrderByInput {
   final SortOrder? userId;
   @override
   final SortOrder? joinedAt;
+  @override
+  final SortOrder? rotationOrder;
+  @override
+  final SortOrder? rotationActive;
 
   @override
   String toString() {
-    return 'GroupMembershipOrderByInput(id: $id, groupId: $groupId, userId: $userId, joinedAt: $joinedAt)';
+    return 'GroupMembershipOrderByInput(id: $id, groupId: $groupId, userId: $userId, joinedAt: $joinedAt, rotationOrder: $rotationOrder, rotationActive: $rotationActive)';
   }
 
   @override
@@ -1912,11 +2189,23 @@ class _$GroupMembershipOrderByInputImpl extends _GroupMembershipOrderByInput {
             (identical(other.groupId, groupId) || other.groupId == groupId) &&
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.joinedAt, joinedAt) ||
-                other.joinedAt == joinedAt));
+                other.joinedAt == joinedAt) &&
+            (identical(other.rotationOrder, rotationOrder) ||
+                other.rotationOrder == rotationOrder) &&
+            (identical(other.rotationActive, rotationActive) ||
+                other.rotationActive == rotationActive));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, id, groupId, userId, joinedAt);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    groupId,
+    userId,
+    joinedAt,
+    rotationOrder,
+    rotationActive,
+  );
 
   /// Create a copy of GroupMembershipOrderByInput
   /// with the given fields replaced by the non-null parameter values.
@@ -1937,6 +2226,8 @@ abstract class _GroupMembershipOrderByInput
     final SortOrder? groupId,
     final SortOrder? userId,
     final SortOrder? joinedAt,
+    final SortOrder? rotationOrder,
+    final SortOrder? rotationActive,
   }) = _$GroupMembershipOrderByInputImpl;
   const _GroupMembershipOrderByInput._() : super._();
 
@@ -1948,6 +2239,10 @@ abstract class _GroupMembershipOrderByInput
   SortOrder? get userId;
   @override
   SortOrder? get joinedAt;
+  @override
+  SortOrder? get rotationOrder;
+  @override
+  SortOrder? get rotationActive;
 
   /// Create a copy of GroupMembershipOrderByInput
   /// with the given fields replaced by the non-null parameter values.

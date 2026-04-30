@@ -159,6 +159,18 @@ void registerAllModels(SchemaRegistry registry) {
           type: 'DateTime',
           defaultValue: 'now()',
         ),
+        'rotationOrder': FieldInfo(
+          name: 'rotationOrder',
+          columnName: 'rotationOrder',
+          type: 'int',
+          defaultValue: '0',
+        ),
+        'rotationActive': FieldInfo(
+          name: 'rotationActive',
+          columnName: 'rotationActive',
+          type: 'bool',
+          defaultValue: 'true',
+        ),
       },
       relations: {
         'group': RelationInfo.manyToOne(
