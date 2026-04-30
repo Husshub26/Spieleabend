@@ -1,0 +1,23 @@
+#!/bin/sh
+# Run commitlint with verbose output
+npx --no -- commitlint --edit "$1" --verbose
+
+# Get the commit message
+commit_msg=$(cat "$1")
+
+# Extract text after "type(scope): " pattern
+text=$(echo "$commit_msg" | sed -E 's/^[a-z]+(\([^)]*\))?:[[:space:]]*//')
+
+# Remove leading emojis (patterns like :emoji_name:) and symbols
+text=$(echo "$text" | sed -E 's/^(:[a-zA-Z_]+:|[^a-zA-Z0-9])+//')
+
+# Check if text exists and starts with uppercase letter
+if [ -n "$text" ]; then
+  first_char=$(echo "$text" | head -c 1)
+  if echo "$first_char" | grep -qE '^[A-Z]$'; then
+    echo "❌ Error: subject text must start with lowercase letter"
+    exit 1
+  fi
+fi
+
+exit 0

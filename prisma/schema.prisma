@@ -1,0 +1,154 @@
+// Prisma schema for the Spieleabend app.
+//
+// The schema is the single source of truth. The Dart client is produced via:
+//   dart run prisma_flutter_connector:generate \
+//     --schema prisma/schema.prisma --output lib/generated/
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String        @id @default(cuid())
+  username    String        @unique
+  displayName String
+  hostedSessions GameSession[]   @relation("hostedSessions")
+  memberships GroupMembership[]
+  createdGroups Group[]         @relation("createdGroups")
+  proposals   GameProposal[]
+  votes       GameVote[]
+  ratings     EveningRating[]
+  messages    QuickMessage[]
+  preferences CuisinePreference[]
+  orders      FoodOrder[]
+}
+
+model Group {
+  id          String            @id @default(cuid())
+  name        String
+  createdAt   DateTime          @default(now())
+  createdById String
+  createdBy   User              @relation("createdGroups", fields: [createdById], references: [id])
+  memberships GroupMembership[]
+  sessions    GameSession[]
+}
+
+model GroupMembership {
+  id       String   @id @default(cuid())
+  groupId  String
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+}
+
+model GameSession {
+  id          String         @id @default(cuid())
+  groupId     String
+  group       Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  hostId      String
+  host        User           @relation("hostedSessions", fields: [hostId], references: [id])
+  location    String
+  finished    Boolean        @default(false)
+  proposals   GameProposal[]
+  ratings     EveningRating[]
+  messages    QuickMessage[]
+  preferences CuisinePreference[]
+  orders      FoodOrder[]
+}
+
+model GameProposal {
+  id          String      @id @default(cuid())
+  sessionId   String
+  session     GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  proposedById String
+  proposedBy  User        @relation(fields: [proposedById], references: [id])
+  title       String
+  description String
+  votes       GameVote[]
+}
+
+model GameVote {
+  id         String       @id @default(cuid())
+  proposalId String
+  proposal   GameProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id])
+  score      Int
+
+  @@unique([proposalId, userId])
+}
+
+model EveningRating {
+  id           String      @id @default(cuid())
+  sessionId    String
+  session      GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  hostScore    Int
+  foodScore    Int
+  eveningScore Int
+  comment      String
+}
+
+model QuickMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User        @relation(fields: [senderId], references: [id])
+  text      String
+  sentAt    DateTime    @default(now())
+}
+
+enum CuisineType {
+  italian
+  asian
+  burger
+  mexican
+  indian
+  vegan
+  sushi
+}
+
+model CuisinePreference {
+  id        String        @id @default(cuid())
+  sessionId String
+  session   GameSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  preferred CuisineType[]
+}
+
+model DeliveryService {
+  id      String      @id @default(cuid())
+  name    String
+  cuisine CuisineType
+  menu    MenuItem[]
+}
+
+model MenuItem {
+  id                String          @id @default(cuid())
+  deliveryServiceId String
+  deliveryService   DeliveryService @relation(fields: [deliveryServiceId], references: [id], onDelete: Cascade)
+  name              String
+  description       String
+  priceEur          Float
+}
+
+model FoodOrder {
+  id           String      @id @default(cuid())
+  sessionId    String
+  session      GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  menuItemIds  String      // JSON-encoded array of MenuItem ids
+}

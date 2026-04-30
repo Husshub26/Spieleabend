@@ -1,0 +1,19 @@
+#!/bin/sh
+# Format Dart code before each commit and re-stage any reformatted files
+# that were already part of this commit.
+# Set up once with: git config core.hooksPath .githooks
+
+set -e
+
+echo "▶ dart format …"
+fmt_output=$(dart format .)
+echo "$fmt_output"
+
+changed=$(echo "$fmt_output" | sed -nE 's/.*Formatted [0-9]+ files \(([0-9]+) changed\).*/\1/p')
+if [ -n "$changed" ] && [ "$changed" -gt 0 ]; then
+  echo "▶ re-staging formatter changes …"
+  # Only re-stage files that were already part of this commit.
+  git diff --name-only --cached | xargs -r git add --
+fi
+
+echo "✅ pre-commit format done"
