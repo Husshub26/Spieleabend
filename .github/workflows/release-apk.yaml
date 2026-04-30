@@ -52,6 +52,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -88,6 +91,27 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release --no-tree-shake-icons
 
+      - name: Generate changelog
+        id: changelog
+        run: |
+          set -e
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %h %s" | grep -E "^- [0-9a-f]+ (feat|fix)" || true)
+          else
+            COMMITS=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"- %h %s" | grep -E "^- [0-9a-f]+ (feat|fix)" || true)
+          fi
+          if [ -z "$COMMITS" ]; then
+            COMMITS="No feat or fix commits since last release."
+          fi
+          echo "Generated changelog:"
+          echo "$COMMITS"
+          {
+            echo 'changelog<<EOF'
+            echo "$COMMITS"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -95,9 +119,9 @@ jobs:
           name: Release v${{ env.version }}
           body: |
             ## ${{ env.app_name }} v${{ env.version }}
-            
-            ### Artifacts
-            - APK (Universal): `app-release.apk`
+
+            ### Changelog
+            ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
           files: |

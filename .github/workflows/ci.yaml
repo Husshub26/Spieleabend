@@ -22,7 +22,9 @@ jobs:
         run: flutter pub get
 
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: |
+          find . -path ./lib/generated -prune -o -path ./build -prune -o -name "*.dart" -print \
+            | xargs dart format --output=none --set-exit-if-changed
 
       - name: Analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
