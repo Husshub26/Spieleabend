@@ -4,8 +4,8 @@ App für das Organisieren von Spieleabenden.
 
 # Important
 - Commit Messages MUST follow the structure of [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) ... you can use the supplied VSCode extension (`Ctrl + Shift +  P`, `> Conventional Commits`) to have a guided experience.
-- Install Docker
-- When opening the folder with VSCode, press `Ctrl + Shift + P` and select `> Dev Container: `
+- Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- When opening the folder with VSCode, press `Ctrl + Shift + P` and select `> Dev Container: Reopen in Container`
 
 ## Getting Started
 
