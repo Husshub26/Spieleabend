@@ -37,40 +37,40 @@ GoRouter buildRouter(AuthBloc auth, GroupsBloc groups) {
       return null;
     },
     routes: [
-      GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
-      GoRoute(path: '/groups', builder: (_, __) => const GroupPickerPage()),
+      GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      GoRoute(path: '/groups', builder: (_, _) => const GroupPickerPage()),
       GoRoute(
         path: '/group/members',
-        builder: (_, __) => const GroupMembersPage(),
+        builder: (_, _) => const GroupMembersPage(),
       ),
-      GoRoute(path: '/', builder: (_, __) => const HomePage()),
+      GoRoute(path: '/', builder: (_, _) => const HomePage()),
       GoRoute(
         path: '/next-session',
-        builder: (_, __) => const NextSessionPage(),
+        builder: (_, _) => const NextSessionPage(),
       ),
       GoRoute(
         path: '/host-rotation',
-        builder: (_, __) => const HostRotationScreen(),
+        builder: (_, _) => const HostRotationScreen(),
       ),
       GoRoute(
         path: '/proposals',
-        builder: (_, __) => const GameProposalsScreen(),
+        builder: (_, _) => const GameProposalsScreen(),
       ),
-      GoRoute(path: '/voting', builder: (_, __) => const GameVotingScreen()),
-      GoRoute(path: '/rating', builder: (_, __) => const EveningRatingScreen()),
+      GoRoute(path: '/voting', builder: (_, _) => const GameVotingScreen()),
+      GoRoute(path: '/rating', builder: (_, _) => const EveningRatingScreen()),
       GoRoute(
         path: '/quick-message',
-        builder: (_, __) => const QuickMessageScreen(),
+        builder: (_, _) => const QuickMessageScreen(),
       ),
       GoRoute(
         path: '/cuisine-reminder',
-        builder: (_, __) => const CuisineReminderScreen(),
+        builder: (_, _) => const CuisineReminderScreen(),
       ),
       GoRoute(
         path: '/cuisine-summary',
-        builder: (_, __) => const CuisineSummaryScreen(),
+        builder: (_, _) => const CuisineSummaryScreen(),
       ),
-      GoRoute(path: '/menu-order', builder: (_, __) => const MenuOrderScreen()),
+      GoRoute(path: '/menu-order', builder: (_, _) => const MenuOrderScreen()),
     ],
     errorBuilder: (_, state) => Scaffold(
       appBar: AppBar(title: const Text('Fehler')),
