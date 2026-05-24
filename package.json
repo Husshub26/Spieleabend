@@ -1,0 +1,9 @@
+{
+  "name": "spieleabend-tooling",
+  "private": true,
+  "description": "Dev-only tooling (commitlint) used by .githooks/commit-msg.",
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0"
+  }
+}

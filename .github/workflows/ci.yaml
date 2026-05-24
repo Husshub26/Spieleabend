@@ -1,0 +1,33 @@
+name: CI Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  analyze-and-test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.41.8
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: |
+          find . -path ./lib/generated -prune -o -path ./build -prune -o -name "*.dart" -print \
+            | xargs dart format --output=none --set-exit-if-changed
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Test
+        run: flutter test
