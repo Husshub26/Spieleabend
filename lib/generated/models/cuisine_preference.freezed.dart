@@ -24,7 +24,7 @@ mixin _$CuisinePreference {
   String get userId => throw _privateConstructorUsedError;
   @JsonKey(includeFromJson: false, includeToJson: false)
   User? get user => throw _privateConstructorUsedError;
-  List<CuisineType> get preferred => throw _privateConstructorUsedError;
+  CuisineType get preferred => throw _privateConstructorUsedError;
 
   /// Create a copy of CuisinePreference
   /// with the given fields replaced by the non-null parameter values.
@@ -46,7 +46,7 @@ abstract class $CuisinePreferenceCopyWith<$Res> {
     @JsonKey(includeFromJson: false, includeToJson: false) GameSession? session,
     String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) User? user,
-    List<CuisineType> preferred,
+    CuisineType preferred,
   });
 
   $GameSessionCopyWith<$Res>? get session;
@@ -100,7 +100,7 @@ class _$CuisinePreferenceCopyWithImpl<$Res, $Val extends CuisinePreference>
             preferred: null == preferred
                 ? _value.preferred
                 : preferred // ignore: cast_nullable_to_non_nullable
-                      as List<CuisineType>,
+                      as CuisineType,
           )
           as $Val,
     );
@@ -150,7 +150,7 @@ abstract class _$$CuisinePreferenceImplCopyWith<$Res>
     @JsonKey(includeFromJson: false, includeToJson: false) GameSession? session,
     String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) User? user,
-    List<CuisineType> preferred,
+    CuisineType preferred,
   });
 
   @override
@@ -203,9 +203,9 @@ class __$$CuisinePreferenceImplCopyWithImpl<$Res>
             : user // ignore: cast_nullable_to_non_nullable
                   as User?,
         preferred: null == preferred
-            ? _value._preferred
+            ? _value.preferred
             : preferred // ignore: cast_nullable_to_non_nullable
-                  as List<CuisineType>,
+                  as CuisineType,
       ),
     );
   }
@@ -220,9 +220,8 @@ class _$CuisinePreferenceImpl extends _CuisinePreference {
     @JsonKey(includeFromJson: false, includeToJson: false) this.session,
     required this.userId,
     @JsonKey(includeFromJson: false, includeToJson: false) this.user,
-    required final List<CuisineType> preferred,
-  }) : _preferred = preferred,
-       super._();
+    required this.preferred,
+  }) : super._();
 
   @override
   final String id;
@@ -236,13 +235,8 @@ class _$CuisinePreferenceImpl extends _CuisinePreference {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   final User? user;
-  final List<CuisineType> _preferred;
   @override
-  List<CuisineType> get preferred {
-    if (_preferred is EqualUnmodifiableListView) return _preferred;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_preferred);
-  }
+  final CuisineType preferred;
 
   @override
   String toString() {
@@ -260,22 +254,13 @@ class _$CuisinePreferenceImpl extends _CuisinePreference {
             (identical(other.session, session) || other.session == session) &&
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.user, user) || other.user == user) &&
-            const DeepCollectionEquality().equals(
-              other._preferred,
-              _preferred,
-            ));
+            (identical(other.preferred, preferred) ||
+                other.preferred == preferred));
   }
 
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    sessionId,
-    session,
-    userId,
-    user,
-    const DeepCollectionEquality().hash(_preferred),
-  );
+  int get hashCode =>
+      Object.hash(runtimeType, id, sessionId, session, userId, user, preferred);
 
   /// Create a copy of CuisinePreference
   /// with the given fields replaced by the non-null parameter values.
@@ -297,7 +282,7 @@ abstract class _CuisinePreference extends CuisinePreference {
     final GameSession? session,
     required final String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) final User? user,
-    required final List<CuisineType> preferred,
+    required final CuisineType preferred,
   }) = _$CuisinePreferenceImpl;
   const _CuisinePreference._() : super._();
 
@@ -314,7 +299,7 @@ abstract class _CuisinePreference extends CuisinePreference {
   @JsonKey(includeFromJson: false, includeToJson: false)
   User? get user;
   @override
-  List<CuisineType> get preferred;
+  CuisineType get preferred;
 
   /// Create a copy of CuisinePreference
   /// with the given fields replaced by the non-null parameter values.
@@ -328,7 +313,7 @@ abstract class _CuisinePreference extends CuisinePreference {
 mixin _$CreateCuisinePreferenceInput {
   String get sessionId => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
-  List<CuisineType> get preferred => throw _privateConstructorUsedError;
+  CuisineType get preferred => throw _privateConstructorUsedError;
 
   /// Create a copy of CreateCuisinePreferenceInput
   /// with the given fields replaced by the non-null parameter values.
@@ -348,7 +333,7 @@ abstract class $CreateCuisinePreferenceInputCopyWith<$Res> {
         CreateCuisinePreferenceInput
       >;
   @useResult
-  $Res call({String sessionId, String userId, List<CuisineType> preferred});
+  $Res call({String sessionId, String userId, CuisineType preferred});
 }
 
 /// @nodoc
@@ -386,7 +371,7 @@ class _$CreateCuisinePreferenceInputCopyWithImpl<
             preferred: null == preferred
                 ? _value.preferred
                 : preferred // ignore: cast_nullable_to_non_nullable
-                      as List<CuisineType>,
+                      as CuisineType,
           )
           as $Val,
     );
@@ -402,7 +387,7 @@ abstract class _$$CreateCuisinePreferenceInputImplCopyWith<$Res>
   ) = __$$CreateCuisinePreferenceInputImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String sessionId, String userId, List<CuisineType> preferred});
+  $Res call({String sessionId, String userId, CuisineType preferred});
 }
 
 /// @nodoc
@@ -438,9 +423,9 @@ class __$$CreateCuisinePreferenceInputImplCopyWithImpl<$Res>
             : userId // ignore: cast_nullable_to_non_nullable
                   as String,
         preferred: null == preferred
-            ? _value._preferred
+            ? _value.preferred
             : preferred // ignore: cast_nullable_to_non_nullable
-                  as List<CuisineType>,
+                  as CuisineType,
       ),
     );
   }
@@ -452,21 +437,15 @@ class _$CreateCuisinePreferenceInputImpl extends _CreateCuisinePreferenceInput {
   const _$CreateCuisinePreferenceInputImpl({
     required this.sessionId,
     required this.userId,
-    required final List<CuisineType> preferred,
-  }) : _preferred = preferred,
-       super._();
+    required this.preferred,
+  }) : super._();
 
   @override
   final String sessionId;
   @override
   final String userId;
-  final List<CuisineType> _preferred;
   @override
-  List<CuisineType> get preferred {
-    if (_preferred is EqualUnmodifiableListView) return _preferred;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_preferred);
-  }
+  final CuisineType preferred;
 
   @override
   String toString() {
@@ -481,19 +460,12 @@ class _$CreateCuisinePreferenceInputImpl extends _CreateCuisinePreferenceInput {
             (identical(other.sessionId, sessionId) ||
                 other.sessionId == sessionId) &&
             (identical(other.userId, userId) || other.userId == userId) &&
-            const DeepCollectionEquality().equals(
-              other._preferred,
-              _preferred,
-            ));
+            (identical(other.preferred, preferred) ||
+                other.preferred == preferred));
   }
 
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    sessionId,
-    userId,
-    const DeepCollectionEquality().hash(_preferred),
-  );
+  int get hashCode => Object.hash(runtimeType, sessionId, userId, preferred);
 
   /// Create a copy of CreateCuisinePreferenceInput
   /// with the given fields replaced by the non-null parameter values.
@@ -514,7 +486,7 @@ abstract class _CreateCuisinePreferenceInput
   const factory _CreateCuisinePreferenceInput({
     required final String sessionId,
     required final String userId,
-    required final List<CuisineType> preferred,
+    required final CuisineType preferred,
   }) = _$CreateCuisinePreferenceInputImpl;
   const _CreateCuisinePreferenceInput._() : super._();
 
@@ -523,7 +495,7 @@ abstract class _CreateCuisinePreferenceInput
   @override
   String get userId;
   @override
-  List<CuisineType> get preferred;
+  CuisineType get preferred;
 
   /// Create a copy of CreateCuisinePreferenceInput
   /// with the given fields replaced by the non-null parameter values.
@@ -539,7 +511,7 @@ abstract class _CreateCuisinePreferenceInput
 mixin _$UpdateCuisinePreferenceInput {
   String? get sessionId => throw _privateConstructorUsedError;
   String? get userId => throw _privateConstructorUsedError;
-  List<CuisineType>? get preferred => throw _privateConstructorUsedError;
+  CuisineType? get preferred => throw _privateConstructorUsedError;
 
   /// Create a copy of UpdateCuisinePreferenceInput
   /// with the given fields replaced by the non-null parameter values.
@@ -559,7 +531,7 @@ abstract class $UpdateCuisinePreferenceInputCopyWith<$Res> {
         UpdateCuisinePreferenceInput
       >;
   @useResult
-  $Res call({String? sessionId, String? userId, List<CuisineType>? preferred});
+  $Res call({String? sessionId, String? userId, CuisineType? preferred});
 }
 
 /// @nodoc
@@ -597,7 +569,7 @@ class _$UpdateCuisinePreferenceInputCopyWithImpl<
             preferred: freezed == preferred
                 ? _value.preferred
                 : preferred // ignore: cast_nullable_to_non_nullable
-                      as List<CuisineType>?,
+                      as CuisineType?,
           )
           as $Val,
     );
@@ -613,7 +585,7 @@ abstract class _$$UpdateCuisinePreferenceInputImplCopyWith<$Res>
   ) = __$$UpdateCuisinePreferenceInputImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String? sessionId, String? userId, List<CuisineType>? preferred});
+  $Res call({String? sessionId, String? userId, CuisineType? preferred});
 }
 
 /// @nodoc
@@ -649,9 +621,9 @@ class __$$UpdateCuisinePreferenceInputImplCopyWithImpl<$Res>
             : userId // ignore: cast_nullable_to_non_nullable
                   as String?,
         preferred: freezed == preferred
-            ? _value._preferred
+            ? _value.preferred
             : preferred // ignore: cast_nullable_to_non_nullable
-                  as List<CuisineType>?,
+                  as CuisineType?,
       ),
     );
   }
@@ -663,23 +635,15 @@ class _$UpdateCuisinePreferenceInputImpl extends _UpdateCuisinePreferenceInput {
   const _$UpdateCuisinePreferenceInputImpl({
     this.sessionId,
     this.userId,
-    final List<CuisineType>? preferred,
-  }) : _preferred = preferred,
-       super._();
+    this.preferred,
+  }) : super._();
 
   @override
   final String? sessionId;
   @override
   final String? userId;
-  final List<CuisineType>? _preferred;
   @override
-  List<CuisineType>? get preferred {
-    final value = _preferred;
-    if (value == null) return null;
-    if (_preferred is EqualUnmodifiableListView) return _preferred;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
+  final CuisineType? preferred;
 
   @override
   String toString() {
@@ -694,19 +658,12 @@ class _$UpdateCuisinePreferenceInputImpl extends _UpdateCuisinePreferenceInput {
             (identical(other.sessionId, sessionId) ||
                 other.sessionId == sessionId) &&
             (identical(other.userId, userId) || other.userId == userId) &&
-            const DeepCollectionEquality().equals(
-              other._preferred,
-              _preferred,
-            ));
+            (identical(other.preferred, preferred) ||
+                other.preferred == preferred));
   }
 
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    sessionId,
-    userId,
-    const DeepCollectionEquality().hash(_preferred),
-  );
+  int get hashCode => Object.hash(runtimeType, sessionId, userId, preferred);
 
   /// Create a copy of UpdateCuisinePreferenceInput
   /// with the given fields replaced by the non-null parameter values.
@@ -727,7 +684,7 @@ abstract class _UpdateCuisinePreferenceInput
   const factory _UpdateCuisinePreferenceInput({
     final String? sessionId,
     final String? userId,
-    final List<CuisineType>? preferred,
+    final CuisineType? preferred,
   }) = _$UpdateCuisinePreferenceInputImpl;
   const _UpdateCuisinePreferenceInput._() : super._();
 
@@ -736,7 +693,7 @@ abstract class _UpdateCuisinePreferenceInput
   @override
   String? get userId;
   @override
-  List<CuisineType>? get preferred;
+  CuisineType? get preferred;
 
   /// Create a copy of UpdateCuisinePreferenceInput
   /// with the given fields replaced by the non-null parameter values.

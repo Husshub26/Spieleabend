@@ -1,8 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+
 import '../filters.dart';
 import 'game_session.dart';
 import 'user.dart';
 import 'cuisine_type.dart';
+
 part 'cuisine_preference.freezed.dart';
 
 @freezed
@@ -15,7 +17,7 @@ class CuisinePreference with _$CuisinePreference {
     @JsonKey(includeFromJson: false, includeToJson: false) GameSession? session,
     required String userId,
     @JsonKey(includeFromJson: false, includeToJson: false) User? user,
-    required List<CuisineType> preferred,
+    required CuisineType preferred,
   }) = _CuisinePreference;
 
   factory CuisinePreference.fromJson(Map<String, dynamic> json) {
@@ -23,9 +25,7 @@ class CuisinePreference with _$CuisinePreference {
       id: json['id'] as String,
       sessionId: json['sessionId'] as String,
       userId: json['userId'] as String,
-      preferred: (json['preferred'] as List)
-          .map((e) => _$CuisineTypeFromJson(e as String))
-          .toList(),
+      preferred: _$CuisineTypeFromJson(json['preferred'] as String),
     );
   }
 
@@ -34,7 +34,7 @@ class CuisinePreference with _$CuisinePreference {
       'id': id,
       'sessionId': sessionId,
       'userId': userId,
-      'preferred': preferred.map((e) => _$CuisineTypeToJson(e)).toList(),
+      'preferred': _$CuisineTypeToJson(preferred),
     };
   }
 }
@@ -47,7 +47,7 @@ class CreateCuisinePreferenceInput with _$CreateCuisinePreferenceInput {
   const factory CreateCuisinePreferenceInput({
     required String sessionId,
     required String userId,
-    required List<CuisineType> preferred,
+    required CuisineType preferred,
   }) = _CreateCuisinePreferenceInput;
 
   factory CreateCuisinePreferenceInput.fromJson(Map<String, dynamic> json) {
@@ -60,7 +60,7 @@ class CreateCuisinePreferenceInput with _$CreateCuisinePreferenceInput {
     return <String, dynamic>{
       'sessionId': sessionId,
       'userId': userId,
-      'preferred': preferred.map((e) => _$CuisineTypeToJson(e)).toList(),
+      'preferred': _$CuisineTypeToJson(preferred),
     };
   }
 }
@@ -73,7 +73,7 @@ class UpdateCuisinePreferenceInput with _$UpdateCuisinePreferenceInput {
   const factory UpdateCuisinePreferenceInput({
     String? sessionId,
     String? userId,
-    List<CuisineType>? preferred,
+    CuisineType? preferred,
   }) = _UpdateCuisinePreferenceInput;
 
   factory UpdateCuisinePreferenceInput.fromJson(Map<String, dynamic> json) {
@@ -86,8 +86,7 @@ class UpdateCuisinePreferenceInput with _$UpdateCuisinePreferenceInput {
     return <String, dynamic>{
       if (sessionId != null) 'sessionId': sessionId,
       if (userId != null) 'userId': userId,
-      if (preferred != null)
-        'preferred': preferred?.map((e) => _$CuisineTypeToJson(e)).toList(),
+      if (preferred != null) 'preferred': _$CuisineTypeToJson(preferred),
     };
   }
 }
