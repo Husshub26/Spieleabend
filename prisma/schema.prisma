@@ -124,12 +124,14 @@ enum CuisineType {
 }
 
 model CuisinePreference {
-  id        String        @id @default(cuid())
+  id        String      @id @default(cuid())
   sessionId String
-  session   GameSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session   GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   userId    String
-  user      User          @relation(fields: [userId], references: [id])
-  preferred CuisineType[]
+  user      User        @relation(fields: [userId], references: [id])
+  preferred CuisineType
+
+  @@unique([sessionId, userId, preferred])
 }
 
 model DeliveryService {
