@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+//Enum for the game types
 enum GameType {
   @JsonValue('chess')
   chess,

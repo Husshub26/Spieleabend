@@ -1,227 +1,282 @@
 // Feature 5 (Bruno): Bewertung im Anschluss an den Termin.
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/material.dart'; // Importiert die Flutter-Material-Komponenten.
+import 'package:flutter_bloc/flutter_bloc.dart'; // Importiert die BLoC-Widgets für das Zustandsmanagement.
 
-import '../../../../app/error_handler.dart';
-import '../../../../components/feature_page.dart';
-import '../../../../api/prisma_client.dart';
-import '../../../auth/bloc.dart';
-import '../../../groups/bloc.dart';
+import '../../../../api/prisma_client.dart'; // Importiert den Datenbank-Client.
+import '../../../../components/feature_page.dart'; // Importiert das allgemeine Seiten-Grundgerüst.
+import '../../../auth/bloc.dart'; // Importiert den Auth-BLoC (für den aktuellen User).
+import '../../../groups/bloc.dart'; // Importiert den Gruppen-BLoC (für die aktive Gruppe).
+import '../bloc/bloc.dart'; // Importiert den Logik-Teil (BLoC) für die Bewertung.
 
 /// Haupt-Widget für den Bewertungs-Screen.
-class EveningRatingScreen extends StatefulWidget {
+/// Es stellt den BlocProvider bereit, damit untergeordnete Widgets auf den EveningRatingBloc zugreifen können.
+class EveningRatingScreen extends StatelessWidget {
   const EveningRatingScreen({super.key});
 
   @override
-  State<EveningRatingScreen> createState() => _EveningRatingScreenState();
+  Widget build(BuildContext context) {
+    // Holt die ID der aktuell aktiven Gruppe.
+    final groupId = context.read<GroupsBloc>().state.activeGroup!.id;
+    // Holt den aktuell angemeldeten Benutzer.
+    final me = context.read<AuthBloc>().state.currentUser!;
+
+    // Initialisiert den BlocProvider für diesen Screen.
+    return BlocProvider(
+      create: (ctx) =>
+          EveningRatingBloc(db: ctx.read<PrismaClient>(), currentUserId: me.id)
+            ..add(
+              EveningRatingLoadRequested(groupId),
+            ), // Triggert sofort das Laden der Daten.
+      child: const _RatingView(),
+    );
+  }
 }
 
-class _EveningRatingScreenState extends State<EveningRatingScreen> {
-  // Lokale Status-Variablen für die Sterne-Bewertungen (Standardwert 4).
-  int host = 4, food = 4, evening = 4;
-  // Controller für das Kommentar-Eingabefeld.
-  final TextEditingController _commentController = TextEditingController();
-  // Flag, um zu verhindern, dass geladene Daten bei jedem Widget-Rebuild die Nutzereingaben überschreiben.
-  bool _initialLoadDone = false;
+/// Die eigentliche Ansicht des Screens.
+/// Nutzt einen BlocBuilder, um auf Zustandsänderungen des EveningRatingBloc zu reagieren.
+class _RatingView extends StatelessWidget {
+  const _RatingView();
 
-  // Formatiert ein DateTime-Objekt in das deutsche Format DD.MM.YYYY.
-  String _formatDate(DateTime date) {
-    return "${date.day}.${date.month}.${date.year}";
+  @override
+  Widget build(BuildContext context) {
+    return FeaturePage(
+      title: 'Abend bewerten',
+      icon: Icons.star_outline_rounded,
+      subtitle: 'Bewerte Gastgeber:in, Essen und den Abend insgesamt.',
+      // Baut die UI basierend auf dem aktuellen Zustand des BLoCs auf.
+      child: BlocBuilder<EveningRatingBloc, EveningRatingState>(
+        builder: (context, state) {
+          return switch (state) {
+            EveningRatingLoading() => const Center(
+              // Zeigt einen Ladeindikator an.
+              child: CircularProgressIndicator(),
+            ),
+            EveningRatingError(message: final m) => EmptyState(
+              // Zeigt eine Fehlermeldung an.
+              icon: Icons.error_outline,
+              title: 'Fehler',
+              message: m,
+            ),
+            EveningRatingLoaded loaded => _Body(
+              state: loaded,
+            ), // Zeigt das Formular an.
+          };
+        },
+      ),
+    );
+  }
+}
+
+/// Das Formular für die Bewertung.
+/// Als StatefulWidget implementiert, um den TextEditingController für das Kommentarfeld zu verwalten.
+class _Body extends StatefulWidget {
+  final EveningRatingLoaded state;
+  const _Body({required this.state});
+
+  @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  // Controller für das Texteingabefeld des Kommentars.
+  late final TextEditingController _commentController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialisiert den Controller mit dem Kommentar aus dem aktuellen Zustand.
+    _commentController = TextEditingController(text: widget.state.comment);
   }
 
   @override
   void dispose() {
-    // Ressourcen des Controllers freigeben, wenn der Screen verlassen wird.
+    // Gibt die Ressourcen des Controllers frei.
     _commentController.dispose();
     super.dispose();
   }
 
   @override
+  void didUpdateWidget(_Body oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Aktualisiert das Textfeld, wenn sich der Zustand im BLoC ändert (z.B. nach dem Speichern).
+    if (oldWidget.state.existingRating != widget.state.existingRating ||
+        (oldWidget.state.comment != widget.state.comment &&
+            _commentController.text != widget.state.comment)) {
+      _commentController.text = widget.state.comment;
+    }
+  }
+
+  // Hilfsmethode zur Formatierung des Datums (DD.MM.YYYY).
+  String _formatDate(DateTime date) {
+    return "${date.day}.${date.month}.${date.year}";
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Zugriff auf DB-Client (Datenbank-Instanz), die aktuelle aktive Gruppe und aktuellen Nutzer aus dem BLoC-Provider.
-    final db = context.read<PrismaClient>();
-    final groupId = context.read<GroupsBloc>().state.activeGroup!.id;
-    final currentUser = context.read<AuthBloc>().state.currentUser;
+    final session = widget.state.session;
+    final existingRating = widget.state.existingRating;
 
-    return FeaturePage(
-      title: 'Abend bewerten',
-      icon: Icons.star_outline_rounded,
-      subtitle: 'Bewerte Gastgeber:in, Essen und den Abend insgesamt.',
-      // FutureBuilder koordiniert das Laden der Session und einer eventuell vorhandenen Bewertung.
-      child: FutureBuilder<({GameSession? session, EveningRating? existingRating})>(
-        future: () async {
-          // 1. Suche nach der zuletzt beendeten Spielsession in dieser Gruppe.
-          final session = await db.gameSession.findFirst(
-            where: GameSessionWhereInput(
-              groupId: StringFilter(equals: groupId),
-              finished: const BooleanFilter(equals: true),
-            ),
-            orderBy: const GameSessionOrderByInput(scheduledAt: SortOrder.desc),
-          );
-          if (session == null || currentUser == null) {
-            return (session: session, existingRating: null);
-          }
-          // 2. Prüfen, ob der User für genau diese Session bereits eine Bewertung abgegeben hat.
-          final rating = await db.eveningRating.findFirst(
-            where: EveningRatingWhereInput(
-              sessionId: StringFilter(equals: session.id),
-              userId: StringFilter(equals: currentUser.id),
-            ),
-          );
-          return (session: session, existingRating: rating);
-        }(),
-        builder: (context, snapshot) {
-          // Lade-Indikator anzeigen, während auf die Datenbank gewartet wird:
-          // Zeigt einen Ladekringel, solange die DB-Abfrage läuft.
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    // Falls kein Termin gefunden wurde, der bewertet werden kann.
+    if (session == null) {
+      return const EmptyState(
+        icon: Icons.event_busy_outlined,
+        title: 'Kein beendeter Termin',
+        message:
+            'Bewertungen können erst abgegeben werden, wenn ein Termin beendet wurde.',
+      );
+    }
 
-          final session = snapshot.data?.session;
-          final existingRating = snapshot.data?.existingRating;
-
-          // Falls kein beendeter Termin gefunden wurde, wird ein Hinweistext angezeigt.
-          if (session == null) {
-            return const EmptyState(
-              icon: Icons.event_busy_outlined,
-              title: 'Kein beendeter Termin',
-              message: 'Bewertungen können erst abgegeben werden, wenn ein Termin beendet wurde.',
-            );
-          }
-
-          // Falls bereits eine Bewertung in der DB existiert, werden die lokalen Slider/Texte einmalig damit befüllt.
-          if (existingRating != null && !_initialLoadDone) {
-            host = existingRating.hostScore;
-            food = existingRating.foodScore;
-            evening = existingRating.eveningScore;
-            _commentController.text = existingRating.comment;
-            _initialLoadDone = true;
-          }
-
-          return SingleChildScrollView(
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Zeigt ein Fehlerbanner an, wenn eine Fehlermeldung vorliegt.
+          if (widget.state.errorMessage != null) ...[
+            _Banner(widget.state.errorMessage!, error: true),
+            const SizedBox(height: 8),
+          ],
+          // Zeigt ein Infobanner an (z.B. Erfolgsmeldung).
+          if (widget.state.infoMessage != null) ...[
+            _Banner(widget.state.infoMessage!, error: false),
+            const SizedBox(height: 8),
+          ],
+          // Karte mit den Details zum Termin (Datum und Ort).
+          SectionCard(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Sektion 0: Anzeige von Datum und Ort des Termins, der bewertet wird.
-                SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _formatDate(session.scheduledAt),
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      _InfoRow(icon: Icons.location_on_outlined, text: session.location),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Sektion 1: Zusammenfassung der bereits gespeicherten Bewertung (falls vorhanden).
-                if (existingRating != null) ...[
-                  SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Deine gespeicherte Bewertung:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 8),
-                        _SummaryRow(label: 'Gastgeber:in', stars: existingRating.hostScore),
-                        _SummaryRow(label: 'Essen', stars: existingRating.foodScore),
-                        _SummaryRow(label: 'Abend', stars: existingRating.eveningScore),
-                        if (existingRating.comment.isNotEmpty) ...[
-                          const Divider(),
-                          Text(
-                            existingRating.comment,
-                            style: const TextStyle(fontStyle: FontStyle.italic),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Sektion 2: Interaktive Sterne-Bewertung für die drei Kategorien.
-                _RatingRow(
-                  label: 'Gastgeber:in',
-                  value: host,
-                  onChanged: (v) => setState(() => host = v),
+                Text(
+                  _formatDate(session.scheduledAt),
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 12),
-                _RatingRow(
-                  label: 'Essen',
-                  value: food,
-                  onChanged: (v) => setState(() => food = v),
-                ),
-                const SizedBox(height: 12),
-                _RatingRow(
-                  label: 'Abend insgesamt',
-                  value: evening,
-                  onChanged: (v) => setState(() => evening = v),
-                ),
-                const SizedBox(height: 16),
-                // Sektion 3: Freitextfeld für zusätzliche Kommentare.
-                SectionCard(
-                  child: TextField(
-                    controller: _commentController,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      hintText: 'Kommentar (optional)',
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Sektion 4: Absende-Button. Führt entweder ein 'create' oder 'update' in der DB aus.
-                FilledButton.icon(
-                  icon: const Icon(Icons.send),
-                  label: Text(existingRating == null ? 'Bewertung absenden' : 'Bewertung aktualisieren'),
-                  onPressed: currentUser == null
-                      ? null
-                      : () => guard(context, () async {
-                          if (existingRating == null) {
-                            // Neue Bewertung erstellen.
-                            await db.eveningRating.create(
-                              data: CreateEveningRatingInput(
-                                sessionId: session.id,
-                                userId: currentUser.id,
-                                hostScore: host,
-                                foodScore: food,
-                                eveningScore: evening,
-                                comment: _commentController.text,
-                              ),
-                            );
-                          } else {
-                            // Bestehende Bewertung überschreiben.
-                            await db.eveningRating.update(
-                              where: EveningRatingWhereUniqueInput(id: existingRating.id),
-                              data: UpdateEveningRatingInput(
-                                hostScore: host,
-                                foodScore: food,
-                                eveningScore: evening,
-                                comment: _commentController.text,
-                              ),
-                            );
-                          }
-                          if (context.mounted) {
-                            // Feedback an den Nutzer: Erfolgsmeldung und UI-Refresh triggern.
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Bewertung erfolgreich gespeichert!')),
-                            );
-                            setState(() {
-                              _initialLoadDone = false; // Ermöglicht Neuladen beim nächsten Build
-                            });
-                          }
-                        }),
+                _InfoRow(
+                  icon: Icons.location_on_outlined,
+                  text: session.location,
                 ),
               ],
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 16),
+          // Falls der User diesen Termin bereits bewertet hat, wird die alte Bewertung zur Info angezeigt.
+          if (existingRating != null) ...[
+            SectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Deine gespeicherte Bewertung:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  _SummaryRow(
+                    label: 'Gastgeber:in',
+                    stars: existingRating.hostScore,
+                  ),
+                  _SummaryRow(label: 'Essen', stars: existingRating.foodScore),
+                  _SummaryRow(
+                    label: 'Abend',
+                    stars: existingRating.eveningScore,
+                  ),
+                  if (existingRating.comment.isNotEmpty) ...[
+                    const Divider(),
+                    Text(
+                      existingRating.comment,
+                      style: const TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          // Zeilen für die Sterne-Bewertung in verschiedenen Kategorien.
+          _RatingRow(
+            label: 'Gastgeber:in',
+            value: widget.state.hostScore,
+            onChanged: (v) =>
+                context // Schickt Event an den BLoC bei Änderung.
+                    .read<EveningRatingBloc>()
+                    .add(EveningRatingHostScoreChanged(v)),
+          ),
+          const SizedBox(height: 12),
+          _RatingRow(
+            label: 'Essen',
+            value: widget.state.foodScore,
+            onChanged: (v) =>
+                context // Schickt Event an den BLoC bei Änderung.
+                    .read<EveningRatingBloc>()
+                    .add(EveningRatingFoodScoreChanged(v)),
+          ),
+          const SizedBox(height: 12),
+          _RatingRow(
+            label: 'Abend insgesamt',
+            value: widget.state.eveningScore,
+            onChanged: (v) =>
+                context // Schickt Event an den BLoC bei Änderung.
+                    .read<EveningRatingBloc>()
+                    .add(EveningRatingEveningScoreChanged(v)),
+          ),
+          const SizedBox(height: 16),
+          // Eingabefeld für den optionalen Freitext-Kommentar.
+          SectionCard(
+            child: TextField(
+              controller: _commentController,
+              maxLines: 4,
+              onChanged: (v) => context.read<EveningRatingBloc>().add(
+                EveningRatingCommentChanged(v),
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Kommentar (optional)',
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Button zum Absenden oder Aktualisieren der Bewertung.
+          FilledButton.icon(
+            icon: const Icon(Icons.send),
+            label: Text(
+              existingRating == null
+                  ? 'Bewertung absenden'
+                  : 'Bewertung aktualisieren',
+            ), // Dynamischer Button-Text.
+            onPressed: () => context.read<EveningRatingBloc>().add(
+              const EveningRatingSaveRequested(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Hilfs-Widget für Info- oder Fehlerbanner am oberen Rand des Inhalts.
+class _Banner extends StatelessWidget {
+  final String text;
+  final bool error;
+  const _Banner(this.text, {required this.error});
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    // Wählt die Farben basierend darauf aus, ob es ein Fehler ist oder nicht.
+    final color = error ? scheme.errorContainer : scheme.secondaryContainer;
+    final on = error ? scheme.onErrorContainer : scheme.onSecondaryContainer;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(error ? Icons.error_outline : Icons.info_outline, color: on),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: TextStyle(color: on)),
+          ),
+        ],
       ),
     );
   }
