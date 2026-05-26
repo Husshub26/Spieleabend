@@ -284,13 +284,24 @@ class _LastHostStaticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.5,
-      child: Card(
-        child: ListTile(
-          leading: CircleAvatar(child: Text('$displayNumber')),
-          title: Text(entry.user.displayName),
-          trailing: const Chip(label: Text('Zuletzt')),
+    final scheme = Theme.of(context).colorScheme;
+    return IgnorePointer(
+      child: Opacity(
+        opacity: 0.55,
+        child: Card(
+          elevation: 0,
+          color: scheme.surfaceContainerHighest,
+          child: ListTile(
+            leading: CircleAvatar(child: Text('$displayNumber')),
+            title: Text(entry.user.displayName),
+            trailing: Wrap(
+              spacing: 6,
+              children: [
+                const Icon(Icons.lock_outline, size: 18),
+                const Chip(label: Text('Zuletzt')),
+              ],
+            ),
+          ),
         ),
       ),
     );
