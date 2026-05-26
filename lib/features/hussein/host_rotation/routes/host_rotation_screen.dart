@@ -182,7 +182,6 @@ class _ReadOnlyList extends StatelessWidget {
             child: ListTile(
               leading: CircleAvatar(child: Text('${i + 1}')),
               title: Text(entries[i].user.displayName),
-              subtitle: Text(_statusFor(i)),
               trailing: entries[i].user.id == nextHostUserId
                   ? const Chip(label: Text('Nächste:r'))
                   : null,
@@ -225,7 +224,6 @@ class _OwnerReorderableList extends StatelessWidget {
           child: ListTile(
             leading: CircleAvatar(child: Text('${i + 1}')),
             title: Text(e.user.displayName),
-            subtitle: Text(_statusFor(i)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -300,10 +298,4 @@ class _OwnerReorderableList extends StatelessWidget {
       );
     }
   }
-}
-
-String _statusFor(int index) {
-  if (index == 0) return 'Aktuell vorne';
-  if (index == 1) return 'Danach dran';
-  return '${index + 1}. in der Reihe';
 }
