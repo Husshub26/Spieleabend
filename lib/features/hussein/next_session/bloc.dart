@@ -247,9 +247,7 @@ class NextSessionBloc extends Bloc<NextSessionEvent, NextSessionState> {
       await _onLoad(
         NextSessionLoadRequested(event.groupId),
         emit,
-        infoMessage: event.hostIdOverride != null
-            ? 'Termin angelegt. Rotation übersprungen.'
-            : 'Termin angelegt. Rotation wurde weitergedreht.',
+        infoMessage: 'Termin angelegt. Rotation wurde weitergedreht.',
       );
     } catch (e) {
       emit(NextSessionError(e.toString()));

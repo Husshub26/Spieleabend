@@ -323,14 +323,6 @@ Future<void> _openEditor(
                           ],
                           onChanged: (v) => setState(() => overrideUserId = v),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Hinweis: Die Rotation wird übersprungen. '
-                          '${proposedHost.displayName} ist erst wieder dran, '
-                          'wenn sie:er regulär in der Rotation an die Reihe '
-                          'kommt.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
                       ],
                       const SizedBox(height: 12),
                     ],

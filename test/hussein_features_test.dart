@@ -490,7 +490,7 @@ void main() {
         );
         final after = await created as NextSessionLoaded;
         expect(after.session!.hostId, s.other.id);
-        expect(after.infoMessage, contains('übersprungen'));
+        expect(after.infoMessage, contains('weitergedreht'));
         // The rotated host (owner) was skipped — next time the rotation
         // advances from the override's position, so the next proposedHost
         // is the person after `other` in the active rotation = owner again.
