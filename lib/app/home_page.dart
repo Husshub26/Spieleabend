@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/bloc.dart';
+import '../features/auth/user_switcher.dart';
 import '../features/groups/bloc.dart';
 
 class HomePage extends StatelessWidget {
@@ -50,6 +51,16 @@ class HomePage extends StatelessWidget {
                   ),
                   const PopupMenuDivider(),
                   const PopupMenuItem(
+                    value: 'switch',
+                    child: Row(
+                      children: [
+                        Icon(Icons.switch_account_outlined),
+                        SizedBox(width: 8),
+                        Text('Benutzer wechseln'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
                     value: 'logout',
                     child: Row(
                       children: [
@@ -61,7 +72,9 @@ class HomePage extends StatelessWidget {
                   ),
                 ],
                 onSelected: (v) {
-                  if (v == 'logout') {
+                  if (v == 'switch') {
+                    showUserSwitcherDialog(context);
+                  } else if (v == 'logout') {
                     context.read<GroupsBloc>().add(const GroupCleared());
                     context.read<AuthBloc>().add(const AuthLogoutRequested());
                   }

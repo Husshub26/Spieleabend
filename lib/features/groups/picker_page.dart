@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../components/feature_page.dart';
 import '../auth/bloc.dart';
+import '../auth/user_switcher.dart';
 import 'bloc.dart';
 
 class GroupPickerPage extends StatelessWidget {
@@ -36,6 +37,16 @@ class GroupPickerPage extends StatelessWidget {
                   ),
                   const PopupMenuDivider(),
                   const PopupMenuItem(
+                    value: 'switch',
+                    child: Row(
+                      children: [
+                        Icon(Icons.switch_account_outlined),
+                        SizedBox(width: 8),
+                        Text('Benutzer wechseln'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
                     value: 'logout',
                     child: Row(
                       children: [
@@ -47,7 +58,9 @@ class GroupPickerPage extends StatelessWidget {
                   ),
                 ],
                 onSelected: (v) {
-                  if (v == 'logout') {
+                  if (v == 'switch') {
+                    showUserSwitcherDialog(context);
+                  } else if (v == 'logout') {
                     context.read<GroupsBloc>().add(const GroupCleared());
                     context.read<AuthBloc>().add(const AuthLogoutRequested());
                   }
