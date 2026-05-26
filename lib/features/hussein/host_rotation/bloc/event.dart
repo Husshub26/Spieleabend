@@ -34,3 +34,21 @@ class HostRotationActiveToggled extends HostRotationEvent {
   @override
   List<Object?> get props => [active];
 }
+
+/// Randomly reorder the active rotation. The user who is currently
+/// "Nächste:r" stays "Nächste:r" after the shuffle. Owner-only.
+class HostRotationShuffleRequested extends HostRotationEvent {
+  const HostRotationShuffleRequested();
+}
+
+/// Reorder so [userId] becomes Nächste:r. Owner-only. Moves the user into
+/// the rotation slot that `_computeNextHostId` resolves to; other actives
+/// shift but keep their relative order. Paused (inactive) members keep
+/// their relative positions. No-op when the user is already Nächste:r or
+/// not in active rotation.
+class HostRotationMarkAsNextRequested extends HostRotationEvent {
+  final String userId;
+  const HostRotationMarkAsNextRequested(this.userId);
+  @override
+  List<Object?> get props => [userId];
+}

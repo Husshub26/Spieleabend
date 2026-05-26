@@ -43,6 +43,12 @@ class HostRotationLoaded extends HostRotationState {
   /// pre-selected for a brand new Spieltermin. `null` when nobody is active.
   final String? nextHostUserId;
 
+  /// User id of the host of the most recent session (active or finished),
+  /// or `null` when no session exists yet. This user's slot is frozen — they
+  /// cannot be reordered, shuffled, or marked as Nächste:r — to keep the
+  /// `_computeNextHostId` anchor stable.
+  final String? lastHostUserId;
+
   /// Id of the currently logged-in user (for the self-toggle slider).
   final String currentUserId;
 
@@ -52,6 +58,7 @@ class HostRotationLoaded extends HostRotationState {
   const HostRotationLoaded({
     required this.entries,
     required this.nextHostUserId,
+    required this.lastHostUserId,
     required this.currentUserId,
     required this.isOwner,
   });
@@ -64,6 +71,7 @@ class HostRotationLoaded extends HostRotationState {
   HostRotationLoaded copyWith({
     List<RotationEntry>? entries,
     String? nextHostUserId,
+    String? lastHostUserId,
     bool clearNext = false,
   }) {
     return HostRotationLoaded(
@@ -71,13 +79,20 @@ class HostRotationLoaded extends HostRotationState {
       nextHostUserId: clearNext
           ? null
           : (nextHostUserId ?? this.nextHostUserId),
+      lastHostUserId: lastHostUserId ?? this.lastHostUserId,
       currentUserId: currentUserId,
       isOwner: isOwner,
     );
   }
 
   @override
-  List<Object?> get props => [entries, nextHostUserId, currentUserId, isOwner];
+  List<Object?> get props => [
+    entries,
+    nextHostUserId,
+    lastHostUserId,
+    currentUserId,
+    isOwner,
+  ];
 }
 
 class HostRotationError extends HostRotationState {
@@ -102,6 +117,8 @@ class HostRotationBloc extends Bloc<HostRotationEvent, HostRotationState> {
     on<HostRotationLoadRequested>(_onLoad);
     on<HostRotationMoveRequested>(_onMove);
     on<HostRotationActiveToggled>(_onToggle);
+    on<HostRotationShuffleRequested>(_onShuffle);
+    on<HostRotationMarkAsNextRequested>(_onMarkAsNext);
   }
 
   Future<void> _onLoad(
@@ -113,10 +130,17 @@ class HostRotationBloc extends Bloc<HostRotationEvent, HostRotationState> {
       emit(const HostRotationLoading());
       final entries = await _loadEntries(event.groupId);
       final nextId = await _computeNextHostId(event.groupId, entries);
+      final lastSession = await db.gameSession.findFirst(
+        where: GameSessionWhereInput(
+          groupId: StringFilter(equals: event.groupId),
+        ),
+        orderBy: const GameSessionOrderByInput(scheduledAt: SortOrder.desc),
+      );
       emit(
         HostRotationLoaded(
           entries: entries,
           nextHostUserId: nextId,
+          lastHostUserId: lastSession?.hostId,
           currentUserId: currentUserId,
           isOwner: currentUserId == groupOwnerId,
         ),
@@ -145,15 +169,152 @@ class HostRotationBloc extends Bloc<HostRotationEvent, HostRotationState> {
     final current = state;
     if (current is! HostRotationLoaded) return;
 
+    // The most-recent host is the anchor for _computeNextHostId. Moving them
+    // around makes the "next" pointer shift unpredictably — refuse and snap
+    // the UI back via a reload.
+    if (event.userId == current.lastHostUserId) {
+      await _onLoad(HostRotationLoadRequested(groupId), emit);
+      return;
+    }
+
     final ordered = [...current.entries]
       ..sort((a, b) => a.order.compareTo(b.order));
+    // Remember where the locked last host originally sat so we can restore
+    // them if this move would have nudged them out of place.
+    final lastHostId = current.lastHostUserId;
+    final originalLastIdx = lastHostId == null
+        ? -1
+        : ordered.indexWhere((e) => e.user.id == lastHostId);
     final movingIndex = ordered.indexWhere((e) => e.user.id == event.userId);
     if (movingIndex == -1) return;
     final moving = ordered.removeAt(movingIndex);
     final clamped = event.targetIndex.clamp(0, ordered.length);
     ordered.insert(clamped, moving);
 
+    // Snap the locked last host back to their original slot — preserves the
+    // `_computeNextHostId` anchor when somebody is dragged across them.
+    if (originalLastIdx != -1) {
+      final newLastIdx = ordered.indexWhere((e) => e.user.id == lastHostId);
+      if (newLastIdx != -1 && newLastIdx != originalLastIdx) {
+        final tmp = ordered[originalLastIdx];
+        ordered[originalLastIdx] = ordered[newLastIdx];
+        ordered[newLastIdx] = tmp;
+      }
+    }
+
     // Persist new ordinals (1-based for display friendliness).
+    for (var i = 0; i < ordered.length; i++) {
+      final e = ordered[i];
+      if (e.order == i + 1) continue;
+      await db.groupMembership.update(
+        where: GroupMembershipWhereUniqueInput(id: e.membership.id),
+        data: UpdateGroupMembershipInput(rotationOrder: i + 1),
+      );
+    }
+    await _onLoad(HostRotationLoadRequested(groupId), emit);
+  }
+
+  Future<void> _onMarkAsNext(
+    HostRotationMarkAsNextRequested event,
+    Emitter<HostRotationState> emit,
+  ) async {
+    final groupId = _groupId;
+    if (groupId == null) return;
+    if (currentUserId != groupOwnerId) {
+      emit(
+        const HostRotationError(
+          'Nur die Gruppenleitung darf die Reihenfolge ändern.',
+        ),
+      );
+      await _onLoad(HostRotationLoadRequested(groupId), emit);
+      return;
+    }
+    final current = state;
+    if (current is! HostRotationLoaded) return;
+    if (event.userId == current.nextHostUserId) return;
+    if (event.userId == current.lastHostUserId) return;
+    final isActiveTarget = current.activeEntries.any(
+      (e) => e.user.id == event.userId,
+    );
+    if (!isActiveTarget) return;
+    final ordered = [...current.entries]
+      ..sort((a, b) => a.order.compareTo(b.order));
+    final nextSlotFullIdx = ordered.indexWhere(
+      (e) => e.user.id == current.nextHostUserId,
+    );
+    if (nextSlotFullIdx < 0) return;
+    add(
+      HostRotationMoveRequested(
+        userId: event.userId,
+        targetIndex: nextSlotFullIdx,
+      ),
+    );
+  }
+
+  Future<void> _onShuffle(
+    HostRotationShuffleRequested event,
+    Emitter<HostRotationState> emit,
+  ) async {
+    final groupId = _groupId;
+    if (groupId == null) return;
+    if (currentUserId != groupOwnerId) {
+      emit(
+        const HostRotationError(
+          'Nur die Gruppenleitung darf die Reihenfolge ändern.',
+        ),
+      );
+      await _onLoad(HostRotationLoadRequested(groupId), emit);
+      return;
+    }
+    final current = state;
+    if (current is! HostRotationLoaded) return;
+    final actives = [...current.activeEntries];
+    if (actives.length < 2) return;
+    final preservedNextId = current.nextHostUserId;
+    final lastHostUserId = current.lastHostUserId;
+
+    // Remember where the locked last host sits — they must end up back here.
+    final lockedIdx = lastHostUserId == null
+        ? -1
+        : actives.indexWhere((e) => e.user.id == lastHostUserId);
+
+    actives.shuffle();
+
+    // Restore the locked last host to their original slot, swapping out
+    // whoever the shuffle parked there.
+    if (lockedIdx != -1) {
+      final newLockedIdx = actives.indexWhere(
+        (e) => e.user.id == lastHostUserId,
+      );
+      if (newLockedIdx != -1 && newLockedIdx != lockedIdx) {
+        final tmp = actives[lockedIdx];
+        actives[lockedIdx] = actives[newLockedIdx];
+        actives[newLockedIdx] = tmp;
+      }
+    }
+
+    if (preservedNextId != null) {
+      final int targetSlot;
+      if (lockedIdx == -1) {
+        // No last session anchor at all → fall back to position 0.
+        targetSlot = 0;
+      } else {
+        targetSlot = (lockedIdx + 1) % actives.length;
+      }
+      final preservedIdx = actives.indexWhere(
+        (e) => e.user.id == preservedNextId,
+      );
+      // Never displace the locked host while preserving Nächste:r.
+      if (preservedIdx != -1 &&
+          preservedIdx != targetSlot &&
+          preservedIdx != lockedIdx &&
+          targetSlot != lockedIdx) {
+        final tmp = actives[targetSlot];
+        actives[targetSlot] = actives[preservedIdx];
+        actives[preservedIdx] = tmp;
+      }
+    }
+    final ordered = [...actives, ...current.inactiveEntries];
     for (var i = 0; i < ordered.length; i++) {
       final e = ordered[i];
       if (e.order == i + 1) continue;
