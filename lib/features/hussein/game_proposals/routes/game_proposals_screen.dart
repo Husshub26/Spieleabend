@@ -90,7 +90,7 @@ class _Body extends StatelessWidget {
                 )
               : ListView.separated(
                   itemCount: state.proposals.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (_, i) {
                     final p = state.proposals[i];
                     final by =

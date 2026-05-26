@@ -92,7 +92,7 @@ class GroupPickerPage extends StatelessWidget {
                           )
                         : ListView.separated(
                             itemCount: state.groups.length,
-                            separatorBuilder: (_, _) =>
+                            separatorBuilder: (_, __) =>
                                 const SizedBox(height: 8),
                             itemBuilder: (_, i) {
                               final g = state.groups[i];

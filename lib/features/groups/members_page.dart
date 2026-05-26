@@ -92,7 +92,7 @@ class _MembersView extends StatelessWidget {
                     ? const Center(child: CircularProgressIndicator())
                     : ListView.separated(
                         itemCount: state.activeMembers.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (_, i) {
                           final u = state.activeMembers[i];
                           final me = state.user?.id == u.id;

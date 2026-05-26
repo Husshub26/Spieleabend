@@ -1,134 +1,161 @@
-// Feature 9 (Chris): Menü des Lieferdienstes ansehen / Bestellung übermitteln.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../app/error_handler.dart';
-import '../../../../components/feature_page.dart';
-import '../../../../components/cuisine_label.dart';
 import '../../../../api/prisma_client.dart';
+import '../../../../components/cuisine_label.dart';
+import '../../../../components/feature_page.dart';
+import '../../../auth/bloc.dart';
+import '../../../groups/bloc.dart';
+import '../bloc/bloc.dart';
 
-class _ServiceWithMenu {
-  final DeliveryService service;
-  final List<MenuItem> items;
-  _ServiceWithMenu(this.service, this.items);
-}
-
+// UI/Screen für die Auswahl der Lieferdienste, Gerichte und Übermittelung der Bestellung (9. Userstory)
 class MenuOrderScreen extends StatelessWidget {
   const MenuOrderScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final db = context.read<PrismaClient>();
+    // Gruppe für Spielertermin benötigt
+    final groupId = context.read<GroupsBloc>().state.activeGroup!.id;
+    // Aktueller Nutzer (User-ID) benötigt
+    final me = context.read<AuthBloc>().state.currentUser!;
+    // Direkt nach Erstellung wird mit MenuOrderLoadRequested(groupId) das Laden der Daten gestartet
+    return BlocProvider(
+      create: (ctx) =>
+          MenuOrderBloc(db: ctx.read<PrismaClient>(), currentUserId: me.id)
+            ..add(MenuOrderLoadRequested(groupId)),
+      child: const _MenuOrderView(),
+    );
+  }
+}
+
+// View des Menü-/Bestellscreens
+class _MenuOrderView extends StatelessWidget {
+  const _MenuOrderView();
+
+  @override
+  Widget build(BuildContext context) {
     return FeaturePage(
       title: 'Menü & Bestellung',
       icon: Icons.menu_book_outlined,
-      subtitle:
-          'Sieh dir das Menü des ausgewählten Lieferdienstes an und übermittle deine Bestellung.',
-      child: FutureBuilder<_ServiceWithMenu?>(
-        future: () async {
-          final services = await db.deliveryService.findMany();
-          if (services.isEmpty) return null;
-          final selected = services.first;
-          final items = await db.menuItem.findMany(
-            where: MenuItemWhereInput(
-              deliveryServiceId: StringFilter(equals: selected.id),
+      subtitle: 'Wähle Gerichte aus und übermittle deine Bestellung.',
+      // Sobald Änderungen vom State vorliegen, soll das UI neu gebaut werden
+      // Abhängig vom State wird ein unterschiedliches UI angezeigt
+      child: BlocBuilder<MenuOrderBloc, MenuOrderState>(
+        builder: (context, state) {
+          return switch (state) {
+            // Daten werden geladen
+            MenuOrderLoading() => const Center(
+              child: CircularProgressIndicator(),
             ),
-          );
-          return _ServiceWithMenu(selected, items);
-        }(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final data = snapshot.data;
-          if (data == null) {
-            return const EmptyState(
-              icon: Icons.no_meals_outlined,
-              title: 'Kein Lieferdienst gewählt',
-              message:
-                  'Sobald die Gastgeberin / der Gastgeber einen Lieferdienst auswählt, erscheint hier das Menü.',
-            );
-          }
-          final selected = data.service;
-          final items = data.items;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SectionCard(
-                child: Row(
-                  children: [
-                    const Icon(Icons.storefront_outlined, size: 32),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            selected.name,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          Text(
-                            'Küche: ${selected.cuisine.label}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (_, i) {
-                    final m = items[i];
-                    return SectionCard(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  m.name,
-                                  style: Theme.of(context).textTheme.titleSmall,
-                                ),
-                                Text(
-                                  m.description,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text('${m.priceEur.toStringAsFixed(2)} €'),
-                          IconButton(
-                            icon: const Icon(Icons.add_shopping_cart_outlined),
-                            onPressed: () => guard(context, () async {
-                              throw FeatureNotImplementedError(
-                                'Zum Warenkorb hinzufügen',
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                icon: const Icon(Icons.send),
-                label: const Text('Bestellung übermitteln'),
-                onPressed: () => guard(context, () async {
-                  throw FeatureNotImplementedError('Bestellung übermitteln');
-                }),
-              ),
-            ],
-          );
+            // Fehler beim Laden liegt vor
+            MenuOrderError(:final message) => EmptyState(
+              icon: Icons.error_outline,
+              title: 'Fehler',
+              message: message,
+            ),
+            // Daten wurden erfolgreich geladen und können somit angezeigt werden
+            MenuOrderLoaded() => _Body(state: state),
+          };
         },
       ),
+    );
+  }
+}
+
+// Inhalt des Screens, nachdem alle Daten geladen wurden
+class _Body extends StatelessWidget {
+  // Geladener Zustand
+  final MenuOrderLoaded state;
+
+  const _Body({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    // Exisitert noch keine Session, so darf auch noch nichts bestellt werden
+    if (state.session == null) {
+      return const EmptyState(
+        icon: Icons.event_busy_outlined,
+        title: 'Kein aktiver Spieltermin',
+        message: 'Du kannst erst bestellen, wenn ein Termin geplant ist.',
+      );
+    }
+    // Existiert kein Lieferdiesnt für die gewünschte Essensrichtung, kann auch kein Menü angezeigt werden
+    if (state.service == null) {
+      return EmptyState(
+        icon: Icons.no_meals_outlined,
+        title: 'Kein Menü verfügbar',
+        message:
+            state.message ??
+            'Sobald eine Essensrichtung gewählt wurde, erscheint hier ein Menü.',
+      );
+    }
+    // Sofern Session und Lieferdienst existieren, kann Menü angezeigt werden
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Sofern eine Meldung vorliegt, kann diese hier angezeigt werden (bspw. korrektes übermitteln oder ein aufgetretener Fehler)
+        if (state.message != null) ...[
+          Text(state.message!),
+          const SizedBox(height: 12),
+        ],
+        // Lieferdienst mit Name und Essensrichtung anzeigen
+        SectionCard(
+          child: ListTile(
+            leading: const Icon(Icons.storefront_outlined),
+            title: Text(state.service!.name),
+            subtitle: Text('Küche: ${state.service!.cuisine.label}'),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Liste der Gerichte des Lieferdienstes ausgeben
+        Expanded(
+          child: ListView.separated(
+            itemCount: state.items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            // Jeder Menüeintrag soll als Checkbox fungieren (damit aus- oder abgewählt werden kann)
+            itemBuilder: (_, i) {
+              final item = state.items[i];
+              final selected = state.selectedIds.contains(item.id);
+
+              return SectionCard(
+                child: CheckboxListTile(
+                  value: selected,
+                  onChanged: state.saving
+                      ? null
+                      : (value) {
+                          // Bei jeder Änderung (Aus- und Abwahl) wird ein Event an .bloc übergeben
+                          context.read<MenuOrderBloc>().add(
+                            MenuOrderItemToggled(item.id, value ?? false),
+                          );
+                        },
+                  // Name, Beschreibung und Preis des Menüeintrags
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(item.name),
+                  subtitle: Text(item.description),
+                  secondary: Text('${item.priceEur.toStringAsFixed(2)} €'),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        //Buttom zum Absenden der Bestellung
+        FilledButton.icon(
+          icon: const Icon(Icons.send),
+          label: Text(
+            state.saving ? 'Wird übermittelt...' : 'Bestellung übermitteln',
+          ),
+          onPressed: state.saving
+              ? null
+              : () {
+                  // Event an .bloc übergeben
+                  context.read<MenuOrderBloc>().add(
+                    const MenuOrderSubmitRequested(),
+                  );
+                },
+        ),
+      ],
     );
   }
 }
