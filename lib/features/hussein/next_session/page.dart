@@ -105,7 +105,9 @@ class _Body extends StatelessWidget {
               child: ListTile(
                 leading: const Icon(Icons.history),
                 title: Text(_formatDate(s.scheduledAt)),
-                subtitle: Text(s.location),
+                subtitle: Text(
+                  '${_resolveHostName(s.hostId, state.members)} · ${s.location}',
+                ),
                 trailing: const Chip(label: Text('Beendet')),
               ),
             ),
@@ -455,6 +457,13 @@ class _HostInfo extends StatelessWidget {
 
 String _formatDate(DateTime dt) =>
     DateFormat("EEE, d. MMM y · HH:mm", 'de_DE').format(dt);
+
+String _resolveHostName(String hostId, List<User> members) {
+  for (final u in members) {
+    if (u.id == hostId) return u.displayName;
+  }
+  return '—';
+}
 
 class _Row extends StatelessWidget {
   final IconData icon;
