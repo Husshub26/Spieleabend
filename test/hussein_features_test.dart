@@ -136,15 +136,13 @@ void main() {
 
       // Run a handful of shuffles — every one of them must leave
       // nextHostUserId identical, regardless of the random permutation.
+      // (Reads state directly: the bloc dedupes equal emits via Equatable
+      // when the shuffle happens to land on the same ordering, so we can't
+      // wait for a stream event each time.)
       for (var i = 0; i < 5; i++) {
-        final after = bloc.stream.firstWhere(
-          (st) =>
-              st is HostRotationLoaded &&
-              identical(st, initial) == false &&
-              st.activeEntries.length == 3,
-        );
         bloc.add(const HostRotationShuffleRequested());
-        final st = await after as HostRotationLoaded;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        final st = bloc.state as HostRotationLoaded;
         expect(st.nextHostUserId, preservedNextId);
       }
       await bloc.close();
@@ -344,17 +342,17 @@ void main() {
         expect(st.nextHostUserId, third.id);
 
         // 3. Shuffle must keep the locked user at their original slot.
+        // (State is read directly because Equatable dedupes equal Loaded
+        // emits — every legal shuffle in this 3-active-with-lock setup
+        // happens to land on the same final order.)
         for (var i = 0; i < 5; i++) {
-          final after = bloc.stream.firstWhere(
-            (s) => s is HostRotationLoaded && !identical(s, initial),
-          );
           bloc.add(const HostRotationShuffleRequested());
-          final shuffled = await after as HostRotationLoaded;
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          final shuffled = bloc.state as HostRotationLoaded;
           expect(
             shuffled.activeEntries.indexWhere((e) => e.user.id == s.other.id),
             initialOtherIdx,
           );
-          // Nächste:r stays the user just after the locked slot.
           expect(shuffled.lastHostUserId, s.other.id);
           expect(
             shuffled.nextHostUserId,

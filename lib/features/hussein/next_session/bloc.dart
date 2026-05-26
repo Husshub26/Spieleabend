@@ -117,7 +117,12 @@ class NextSessionBloc extends Bloc<NextSessionEvent, NextSessionState> {
   }) async {
     _groupId = event.groupId;
     try {
-      emit(const NextSessionLoading());
+      // Only emit Loading on the first load; subsequent reloads (after
+      // create/edit/finish) preserve the previous Loaded state until the
+      // new data arrives so the UI doesn't flash.
+      if (state is! NextSessionLoaded) {
+        emit(const NextSessionLoading());
+      }
       final session = await db.gameSession.findFirst(
         where: GameSessionWhereInput(
           groupId: StringFilter(equals: event.groupId),

@@ -294,10 +294,15 @@ class _LastHostStaticCard extends StatelessWidget {
           child: ListTile(
             leading: CircleAvatar(child: Text('$displayNumber')),
             title: Text(entry.user.displayName),
-            trailing: Wrap(
-              spacing: 6,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.lock_outline, size: 18),
+                Icon(
+                  Icons.lock_outline,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
                 const Chip(label: Text('Zuletzt')),
               ],
             ),

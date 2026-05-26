@@ -127,7 +127,12 @@ class HostRotationBloc extends Bloc<HostRotationEvent, HostRotationState> {
   ) async {
     _groupId = event.groupId;
     try {
-      emit(const HostRotationLoading());
+      // Only show the full-screen spinner on the very first load. Subsequent
+      // reloads (after move/shuffle/mark/toggle) keep the previous data on
+      // screen until the new state is ready — avoids the whole-widget flash.
+      if (state is! HostRotationLoaded) {
+        emit(const HostRotationLoading());
+      }
       final entries = await _loadEntries(event.groupId);
       final nextId = await _computeNextHostId(event.groupId, entries);
       final lastSession = await db.gameSession.findFirst(
