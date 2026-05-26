@@ -13,19 +13,22 @@ class NextSessionLoadRequested extends NextSessionEvent {
   List<Object?> get props => [groupId];
 }
 
-/// Create a brand new active Spieltermin. Host is auto-assigned to the
-/// next member in the rotation. Refused when one is already active.
+/// Create a brand new active Spieltermin. Host defaults to the next member
+/// in the rotation; pass [hostIdOverride] to assign a different group member
+/// for this one session. Refused when one is already active.
 class NextSessionCreateRequested extends NextSessionEvent {
   final String groupId;
   final DateTime scheduledAt;
   final String location;
+  final String? hostIdOverride;
   const NextSessionCreateRequested({
     required this.groupId,
     required this.scheduledAt,
     required this.location,
+    this.hostIdOverride,
   });
   @override
-  List<Object?> get props => [groupId, scheduledAt, location];
+  List<Object?> get props => [groupId, scheduledAt, location, hostIdOverride];
 }
 
 class NextSessionEditRequested extends NextSessionEvent {

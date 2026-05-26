@@ -79,7 +79,11 @@ class _Body extends StatelessWidget {
           const SizedBox(height: 8),
         ],
         if (state.session == null)
-          _NoActiveSession(proposedHost: state.proposedHost, groupId: groupId)
+          _NoActiveSession(
+            proposedHost: state.proposedHost,
+            members: state.members,
+            groupId: groupId,
+          )
         else
           _ActiveSession(
             session: state.session!,
@@ -114,8 +118,13 @@ class _Body extends StatelessWidget {
 
 class _NoActiveSession extends StatelessWidget {
   final User? proposedHost;
+  final List<User> members;
   final String groupId;
-  const _NoActiveSession({required this.proposedHost, required this.groupId});
+  const _NoActiveSession({
+    required this.proposedHost,
+    required this.members,
+    required this.groupId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +154,12 @@ class _NoActiveSession extends StatelessWidget {
             label: const Text('Neuen Termin anlegen'),
             onPressed: proposedHost == null
                 ? null
-                : () => _openEditor(context, groupId: groupId),
+                : () => _openEditor(
+                    context,
+                    groupId: groupId,
+                    proposedHost: proposedHost,
+                    members: members,
+                  ),
           ),
         ],
       ),
@@ -192,6 +206,8 @@ class _ActiveSession extends StatelessWidget {
                   context,
                   groupId: session.groupId,
                   session: session,
+                  proposedHost: null,
+                  members: const [],
                 ),
               ),
               if (canFinish)
@@ -239,6 +255,8 @@ Future<void> _openEditor(
   BuildContext context, {
   required String groupId,
   GameSession? session,
+  required User? proposedHost,
+  required List<User> members,
 }) async {
   final bloc = context.read<NextSessionBloc>();
   final initial =
@@ -248,73 +266,143 @@ Future<void> _openEditor(
     text: session?.location ?? '',
   );
   DateTime picked = initial;
+  bool overrideEnabled = false;
+  String? overrideUserId;
 
-  final result = await showDialog<({DateTime when, String location})>(
-    context: context,
-    builder: (ctx) {
-      return StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: Text(session == null ? 'Neuer Termin' : 'Termin bearbeiten'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              InkWell(
-                onTap: () async {
-                  final d = await showDatePicker(
-                    context: ctx,
-                    initialDate: picked,
-                    firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                    lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                  );
-                  if (d == null) return;
-                  if (!ctx.mounted) return;
-                  final t = await showTimePicker(
-                    context: ctx,
-                    initialTime: TimeOfDay.fromDateTime(picked),
-                  );
-                  if (t == null) return;
-                  picked = DateTime(d.year, d.month, d.day, t.hour, t.minute);
-                  setState(() {
-                    dateController.text = _formatDate(picked);
-                  });
-                },
-                child: IgnorePointer(
-                  child: TextField(
-                    controller: dateController,
-                    decoration: const InputDecoration(
-                      labelText: 'Datum & Uhrzeit',
-                      prefixIcon: Icon(Icons.event),
+  final isCreate = session == null;
+  final overrideCandidates = members
+      .where((u) => u.id != proposedHost?.id)
+      .toList(growable: false);
+
+  final result =
+      await showDialog<
+        ({DateTime when, String location, String? hostOverride})
+      >(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (ctx, setState) => AlertDialog(
+              title: Text(isCreate ? 'Neuer Termin' : 'Termin bearbeiten'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (isCreate && proposedHost != null) ...[
+                      _HostInfo(proposedHost: proposedHost),
+                      const SizedBox(height: 8),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        dense: true,
+                        title: const Text('Abweichenden Gastgeber wählen'),
+                        value: overrideEnabled,
+                        onChanged: overrideCandidates.isEmpty
+                            ? null
+                            : (v) => setState(() {
+                                overrideEnabled = v ?? false;
+                                if (!overrideEnabled) overrideUserId = null;
+                              }),
+                      ),
+                      if (overrideEnabled) ...[
+                        DropdownButtonFormField<String>(
+                          initialValue: overrideUserId,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Gastgeber:in für diesen Termin',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          items: [
+                            for (final u in overrideCandidates)
+                              DropdownMenuItem(
+                                value: u.id,
+                                child: Text(u.displayName),
+                              ),
+                          ],
+                          onChanged: (v) => setState(() => overrideUserId = v),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Hinweis: Die Rotation wird übersprungen. '
+                          '${proposedHost.displayName} ist erst wieder dran, '
+                          'wenn sie:er regulär in der Rotation an die Reihe '
+                          'kommt.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                    ],
+                    InkWell(
+                      onTap: () async {
+                        final d = await showDatePicker(
+                          context: ctx,
+                          initialDate: picked,
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 1),
+                          ),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365 * 2),
+                          ),
+                        );
+                        if (d == null) return;
+                        if (!ctx.mounted) return;
+                        final t = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.fromDateTime(picked),
+                        );
+                        if (t == null) return;
+                        picked = DateTime(
+                          d.year,
+                          d.month,
+                          d.day,
+                          t.hour,
+                          t.minute,
+                        );
+                        setState(() {
+                          dateController.text = _formatDate(picked);
+                        });
+                      },
+                      child: IgnorePointer(
+                        child: TextField(
+                          controller: dateController,
+                          decoration: const InputDecoration(
+                            labelText: 'Datum & Uhrzeit',
+                            prefixIcon: Icon(Icons.event),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: locationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Ort',
+                        prefixIcon: Icon(Icons.location_on_outlined),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Ort',
-                  prefixIcon: Icon(Icons.location_on_outlined),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Abbrechen'),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Abbrechen'),
+                FilledButton(
+                  onPressed: (overrideEnabled && overrideUserId == null)
+                      ? null
+                      : () => Navigator.of(ctx).pop((
+                          when: picked,
+                          location: locationController.text,
+                          hostOverride: overrideEnabled ? overrideUserId : null,
+                        )),
+                  child: Text(isCreate ? 'Anlegen' : 'Speichern'),
+                ),
+              ],
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(
-                ctx,
-              ).pop((when: picked, location: locationController.text)),
-              child: Text(session == null ? 'Anlegen' : 'Speichern'),
-            ),
-          ],
-        ),
+          );
+        },
       );
-    },
-  );
   if (result == null) return;
   if (session == null) {
     bloc.add(
@@ -322,6 +410,7 @@ Future<void> _openEditor(
         groupId: groupId,
         scheduledAt: result.when,
         location: result.location,
+        hostIdOverride: result.hostOverride,
       ),
     );
   } else {
@@ -330,6 +419,35 @@ Future<void> _openEditor(
         sessionId: session.id,
         scheduledAt: result.when,
         location: result.location,
+      ),
+    );
+  }
+}
+
+class _HostInfo extends StatelessWidget {
+  final User proposedHost;
+  const _HostInfo({required this.proposedHost});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.person_outline, color: scheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Vorgeschlagene:r Gastgeber:in: ${proposedHost.displayName}',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -178,6 +178,80 @@ void main() {
       },
     );
 
+    test(
+      'create with hostIdOverride uses the override and skips the rotated host',
+      () async {
+        final s = await _setup();
+        final bloc = NextSessionBloc(
+          s.db,
+          currentUserId: s.owner.id,
+          groupOwnerId: s.owner.id,
+        );
+        final loaded = bloc.stream.firstWhere((st) => st is NextSessionLoaded);
+        bloc.add(NextSessionLoadRequested(s.group.id));
+        final initial = await loaded as NextSessionLoaded;
+        // Default proposed host is the owner (first in rotation, no prior session).
+        expect(initial.proposedHost?.id, s.owner.id);
+        // members must include both users.
+        expect(initial.members.map((u) => u.id).toSet(), {
+          s.owner.id,
+          s.other.id,
+        });
+
+        // Override the rotated host (owner) with `other`.
+        final created = bloc.stream.firstWhere(
+          (st) => st is NextSessionLoaded && st.session != null,
+        );
+        bloc.add(
+          NextSessionCreateRequested(
+            groupId: s.group.id,
+            scheduledAt: DateTime.utc(2030, 5, 1, 19),
+            location: 'Anders',
+            hostIdOverride: s.other.id,
+          ),
+        );
+        final after = await created as NextSessionLoaded;
+        expect(after.session!.hostId, s.other.id);
+        expect(after.infoMessage, contains('übersprungen'));
+        // The rotated host (owner) was skipped — next time the rotation
+        // advances from the override's position, so the next proposedHost
+        // is the person after `other` in the active rotation = owner again.
+        expect(after.proposedHost?.id, s.owner.id);
+        await bloc.close();
+      },
+    );
+
+    test(
+      'create with override referring to a non-member is rejected',
+      () async {
+        final s = await _setup();
+        final bloc = NextSessionBloc(
+          s.db,
+          currentUserId: s.owner.id,
+          groupOwnerId: s.owner.id,
+        );
+        final loaded = bloc.stream.firstWhere((st) => st is NextSessionLoaded);
+        bloc.add(NextSessionLoadRequested(s.group.id));
+        await loaded;
+
+        final rejected = bloc.stream.firstWhere(
+          (st) => st is NextSessionLoaded && st.errorMessage != null,
+        );
+        bloc.add(
+          NextSessionCreateRequested(
+            groupId: s.group.id,
+            scheduledAt: DateTime.utc(2030, 5, 1, 19),
+            location: 'Anders',
+            hostIdOverride: 'not-a-real-user-id',
+          ),
+        );
+        final st = await rejected as NextSessionLoaded;
+        expect(st.errorMessage, contains('nicht in dieser Gruppe'));
+        expect(st.session, isNull);
+        await bloc.close();
+      },
+    );
+
     test('finish sets finished=true; non-host non-owner is rejected', () async {
       final s = await _setup();
       final bloc = NextSessionBloc(
