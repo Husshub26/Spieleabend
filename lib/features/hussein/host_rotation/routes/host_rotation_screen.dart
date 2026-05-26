@@ -128,9 +128,25 @@ class _LoadedBody extends StatelessWidget {
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            'Reihenfolge',
-            style: Theme.of(context).textTheme.titleSmall,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Reihenfolge',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              if (state.isOwner)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.shuffle, size: 18),
+                  label: const Text('Mischen'),
+                  onPressed: actives.length < 2
+                      ? null
+                      : () => context.read<HostRotationBloc>().add(
+                          const HostRotationShuffleRequested(),
+                        ),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: 4),
@@ -140,9 +156,14 @@ class _LoadedBody extends StatelessWidget {
           _OwnerReorderableList(
             entries: actives,
             nextHostUserId: state.nextHostUserId,
+            lastHostUserId: state.lastHostUserId,
           )
         else
-          _ReadOnlyList(entries: actives, nextHostUserId: state.nextHostUserId),
+          _ReadOnlyList(
+            entries: actives,
+            nextHostUserId: state.nextHostUserId,
+            lastHostUserId: state.lastHostUserId,
+          ),
         if (inactives.isNotEmpty) ...[
           const SizedBox(height: 16),
           Padding(
@@ -171,21 +192,30 @@ class _LoadedBody extends StatelessWidget {
 class _ReadOnlyList extends StatelessWidget {
   final List<RotationEntry> entries;
   final String? nextHostUserId;
-  const _ReadOnlyList({required this.entries, required this.nextHostUserId});
+  final String? lastHostUserId;
+  const _ReadOnlyList({
+    required this.entries,
+    required this.nextHostUserId,
+    required this.lastHostUserId,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (var i = 0; i < entries.length; i++)
-          Card(
-            child: ListTile(
-              leading: CircleAvatar(child: Text('${i + 1}')),
-              title: Text(entries[i].user.displayName),
-              subtitle: Text(_statusFor(i)),
-              trailing: entries[i].user.id == nextHostUserId
-                  ? const Chip(label: Text('Nächste:r'))
-                  : null,
+          Opacity(
+            opacity: entries[i].user.id == lastHostUserId ? 0.5 : 1.0,
+            child: Card(
+              child: ListTile(
+                leading: CircleAvatar(child: Text('${i + 1}')),
+                title: Text(entries[i].user.displayName),
+                trailing: entries[i].user.id == nextHostUserId
+                    ? const Chip(label: Text('Nächste:r'))
+                    : entries[i].user.id == lastHostUserId
+                    ? const Chip(label: Text('Zuletzt'))
+                    : null,
+              ),
             ),
           ),
       ],
@@ -196,8 +226,103 @@ class _ReadOnlyList extends StatelessWidget {
 class _OwnerReorderableList extends StatelessWidget {
   final List<RotationEntry> entries;
   final String? nextHostUserId;
+  final String? lastHostUserId;
   const _OwnerReorderableList({
     required this.entries,
+    required this.nextHostUserId,
+    required this.lastHostUserId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final lastIdx = lastHostUserId == null
+        ? -1
+        : entries.indexWhere((e) => e.user.id == lastHostUserId);
+
+    if (lastIdx < 0) {
+      // No locked last host — one single reorderable segment.
+      return _ReorderableSegment(
+        entries: entries,
+        baseIndex: 0,
+        totalActives: entries.length,
+        nextHostUserId: nextHostUserId,
+      );
+    }
+
+    final before = entries.sublist(0, lastIdx);
+    final lastHostEntry = entries[lastIdx];
+    final after = entries.sublist(lastIdx + 1);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (before.isNotEmpty)
+          _ReorderableSegment(
+            key: const ValueKey('rotation-segment-before'),
+            entries: before,
+            baseIndex: 0,
+            totalActives: entries.length,
+            nextHostUserId: nextHostUserId,
+          ),
+        _LastHostStaticCard(entry: lastHostEntry, displayNumber: lastIdx + 1),
+        if (after.isNotEmpty)
+          _ReorderableSegment(
+            key: const ValueKey('rotation-segment-after'),
+            entries: after,
+            baseIndex: lastIdx + 1,
+            totalActives: entries.length,
+            nextHostUserId: nextHostUserId,
+          ),
+      ],
+    );
+  }
+}
+
+class _LastHostStaticCard extends StatelessWidget {
+  final RotationEntry entry;
+  final int displayNumber;
+  const _LastHostStaticCard({required this.entry, required this.displayNumber});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return IgnorePointer(
+      child: Opacity(
+        opacity: 0.55,
+        child: Card(
+          elevation: 0,
+          color: scheme.surfaceContainerHighest,
+          child: ListTile(
+            leading: CircleAvatar(child: Text('$displayNumber')),
+            title: Text(entry.user.displayName),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                const Chip(label: Text('Zuletzt')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReorderableSegment extends StatelessWidget {
+  final List<RotationEntry> entries;
+  final int baseIndex; // offset within the full actives list
+  final int totalActives;
+  final String? nextHostUserId;
+  const _ReorderableSegment({
+    super.key,
+    required this.entries,
+    required this.baseIndex,
+    required this.totalActives,
     required this.nextHostUserId,
   });
 
@@ -210,34 +335,43 @@ class _OwnerReorderableList extends StatelessWidget {
       itemCount: entries.length,
       onReorder: (oldIndex, newIndex) {
         // Flutter quirk: when dragging downwards newIndex is shifted by 1.
-        final target = newIndex > oldIndex ? newIndex - 1 : newIndex;
+        final localTarget = newIndex > oldIndex ? newIndex - 1 : newIndex;
         context.read<HostRotationBloc>().add(
           HostRotationMoveRequested(
             userId: entries[oldIndex].user.id,
-            targetIndex: target,
+            targetIndex: baseIndex + localTarget,
           ),
         );
       },
       itemBuilder: (context, i) {
         final e = entries[i];
+        final displayNum = baseIndex + i + 1;
+        final isNext = e.user.id == nextHostUserId;
         return Card(
           key: ValueKey(e.user.id),
           child: ListTile(
-            leading: CircleAvatar(child: Text('${i + 1}')),
+            leading: CircleAvatar(child: Text('$displayNum')),
             title: Text(e.user.displayName),
-            subtitle: Text(_statusFor(i)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (e.user.id == nextHostUserId)
+                if (isNext)
                   const Padding(
                     padding: EdgeInsets.only(right: 8),
                     child: Chip(label: Text('Nächste:r')),
                   ),
+                if (!isNext)
+                  IconButton(
+                    tooltip: 'Als Nächste:n markieren',
+                    icon: const Icon(Icons.skip_next),
+                    onPressed: () => context.read<HostRotationBloc>().add(
+                      HostRotationMarkAsNextRequested(e.user.id),
+                    ),
+                  ),
                 IconButton(
                   tooltip: 'Position setzen',
                   icon: const Icon(Icons.format_list_numbered),
-                  onPressed: () => _promptInsert(context, e, entries.length),
+                  onPressed: () => _promptInsert(context, e, totalActives),
                 ),
                 ReorderableDragStartListener(
                   index: i,
@@ -300,10 +434,4 @@ class _OwnerReorderableList extends StatelessWidget {
       );
     }
   }
-}
-
-String _statusFor(int index) {
-  if (index == 0) return 'Aktuell vorne';
-  if (index == 1) return 'Danach dran';
-  return '${index + 1}. in der Reihe';
 }
