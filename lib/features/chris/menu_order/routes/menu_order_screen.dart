@@ -106,7 +106,50 @@ class _Body extends StatelessWidget {
             subtitle: Text('Küche: ${state.service!.cuisine.label}'),
           ),
         ),
+        // Aufgegebene Bestellung ausgeben
         const SizedBox(height: 12),
+        if (state.order != null && state.selectedIds.isNotEmpty) ...[
+          SectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Deine aktuelle Bestellung',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                for (final item in state.items.where(
+                  (item) => state.selectedIds.contains(item.id),
+                ))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(item.name)),
+                        Text('${item.priceEur.toStringAsFixed(2)} €'),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Bestellung löschen'),
+                    onPressed: state.saving
+                        ? null
+                        : () {
+                            context.read<MenuOrderBloc>().add(
+                              const MenuOrderDeleteRequested(),
+                            );
+                          },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         // Liste der Gerichte des Lieferdienstes ausgeben
         Expanded(
           child: ListView.separated(
