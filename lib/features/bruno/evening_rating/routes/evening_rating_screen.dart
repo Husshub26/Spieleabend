@@ -245,6 +245,48 @@ class _BodyState extends State<_Body> {
               const EveningRatingSaveRequested(),
             ),
           ),
+          const SizedBox(height: 24),
+          if (widget.state.history.isNotEmpty) ...[
+            Text(
+              'Vergangene Bewertungen',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            ...widget.state.history.map((item) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.history),
+                  title: Text(_formatDate(item.session.scheduledAt)),
+                  subtitle: Text(item.session.location),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.avg.toStringAsFixed(1),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: Colors.amber,
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${item.count} Stimmen',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );

@@ -28,6 +28,8 @@ class EveningRatingLoaded extends EveningRatingState {
   final String comment; // Der aktuell eingegebene Kommentar-Text
   final String? errorMessage; // Temporäre Fehlermeldung (z.B. Speicherfehler)
   final String? infoMessage; // Temporäre Erfolgsmeldung
+  final List<({GameSession session, double avg, int count})>
+  history; // Historie mit Durchschnittswerten
 
   const EveningRatingLoaded({
     // Konstruktor zum Erzeugen des geladenen Zustands
@@ -39,6 +41,7 @@ class EveningRatingLoaded extends EveningRatingState {
     this.comment = '', // Initial leeres Kommentarfeld
     this.errorMessage, // Initial keine Nachricht
     this.infoMessage, // Initial keine Nachricht
+    this.history = const [],
   });
 
   EveningRatingLoaded copyWith({
@@ -49,6 +52,7 @@ class EveningRatingLoaded extends EveningRatingState {
     int? foodScore, // Neuer vom User gewählter Score
     int? eveningScore, // Neuer vom User gewählter Score
     String? comment, // Neue Kommentar-Eingabe
+    List<({GameSession session, double avg, int count})>? history,
     String? errorMessage, // Neue anzuzeigende Fehlermeldung
     String? infoMessage, // Neue anzuzeigende Info
     bool clearMessages = false, // Flag, um alte Meldungen gezielt zu löschen
@@ -61,6 +65,7 @@ class EveningRatingLoaded extends EveningRatingState {
       foodScore: foodScore ?? this.foodScore,
       eveningScore: eveningScore ?? this.eveningScore,
       comment: comment ?? this.comment,
+      history: history ?? this.history,
       errorMessage: clearMessages ? null : (errorMessage ?? this.errorMessage),
       infoMessage: clearMessages ? null : (infoMessage ?? this.infoMessage),
     );
@@ -75,6 +80,7 @@ class EveningRatingLoaded extends EveningRatingState {
     foodScore,
     eveningScore,
     comment,
+    history,
     errorMessage,
     infoMessage,
   ];
@@ -92,6 +98,7 @@ class EveningRatingBloc extends Bloc<EveningRatingEvent, EveningRatingState> {
   // Die eigentliche Logik-Klasse
   final PrismaClient db; // Instanz des Datenbank-Clients
   final String currentUserId; // ID des aktuell eingeloggten Benutzers
+  String? _groupId; // Speicherung für Refresh-Aktionen
 
   EveningRatingBloc({
     required this.db,
@@ -124,6 +131,7 @@ class EveningRatingBloc extends Bloc<EveningRatingEvent, EveningRatingState> {
     Emitter<EveningRatingState> emit,
   ) async {
     // Handler für das Laden
+    _groupId = event.groupId;
     try {
       emit(const EveningRatingLoading()); // Zuerst Ladekreis in UI triggern
       final session = await db.gameSession.findFirst(
@@ -162,6 +170,7 @@ class EveningRatingBloc extends Bloc<EveningRatingEvent, EveningRatingState> {
           eveningScore: rating?.eveningScore ?? 4,
           comment:
               rating?.comment ?? '', // Vorhandenen Kommentar nehmen oder leer
+          history: await _fetchHistory(event.groupId),
         ),
       );
     } catch (e) {
@@ -169,6 +178,35 @@ class EveningRatingBloc extends Bloc<EveningRatingEvent, EveningRatingState> {
         EveningRatingError(e.toString()),
       ); // Bei Datenbank-Fehlern Error-Zustand senden
     }
+  }
+
+  /// Lädt die Historie und berechnet die Durchschnittswerte pro Termin.
+  Future<List<({GameSession session, double avg, int count})>> _fetchHistory(
+    String groupId,
+  ) async {
+    final sessions = await db.gameSession.findMany(
+      where: GameSessionWhereInput(
+        groupId: StringFilter(equals: groupId),
+        finished: const BooleanFilter(equals: true),
+      ),
+      orderBy: const GameSessionOrderByInput(scheduledAt: SortOrder.desc),
+    );
+
+    final List<({GameSession session, double avg, int count})> history = [];
+    for (final s in sessions) {
+      final ratings = await db.eveningRating.findMany(
+        where: EveningRatingWhereInput(sessionId: StringFilter(equals: s.id)),
+      );
+      double avg = 0;
+      if (ratings.isNotEmpty) {
+        final sum = ratings.fold(0.0, (p, r) {
+          return p + (r.hostScore + r.foodScore + r.eveningScore) / 3.0;
+        });
+        avg = sum / ratings.length;
+      }
+      history.add((session: s, avg: avg, count: ratings.length));
+    }
+    return history;
   }
 
   // Die Handler für Score-Änderungen aktualisieren jeweils nur das betreffende Feld im aktuellen State
@@ -249,6 +287,7 @@ class EveningRatingBloc extends Bloc<EveningRatingEvent, EveningRatingState> {
           current.copyWith(
             existingRating: r,
             infoMessage: 'Bewertung gespeichert!',
+            history: await _fetchHistory(_groupId!),
           ),
         ); // UI mit neuem DB-Objekt updaten
       } else {
@@ -266,6 +305,7 @@ class EveningRatingBloc extends Bloc<EveningRatingEvent, EveningRatingState> {
           current.copyWith(
             existingRating: r,
             infoMessage: 'Bewertung aktualisiert!',
+            history: await _fetchHistory(_groupId!),
           ),
         ); // UI mit geänderten DB-Daten updaten
       }
