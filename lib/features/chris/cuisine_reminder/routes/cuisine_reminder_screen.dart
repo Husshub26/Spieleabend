@@ -39,7 +39,8 @@ class _CuisineReminderView extends StatelessWidget {
     return FeaturePage(
       title: 'Lieblingsessen wählen',
       icon: Icons.restaurant_menu_outlined,
-      subtitle: 'Welche Essensrichtungen kommen für dich in Frage?',
+      subtitle:
+          'Welche Essensrichtungen kommen für dich in Frage? Du kannst eine oder mehrere Auswählen.',
       // Sobald Änderungen vom State vorliegen, soll das UI neu gebaut werden
       // Abhängig vom State wird ein unterschiedliches UI angezeigt
       child: BlocBuilder<CuisineReminderBloc, CuisineReminderState>(

@@ -40,3 +40,8 @@ class MenuOrderItemToggled extends MenuOrderEvent {
 class MenuOrderSubmitRequested extends MenuOrderEvent {
   const MenuOrderSubmitRequested();
 }
+
+// Event zum Löschen der bereits gespeicherten Bestellung aus der Datenbank
+class MenuOrderDeleteRequested extends MenuOrderEvent {
+  const MenuOrderDeleteRequested();
+}

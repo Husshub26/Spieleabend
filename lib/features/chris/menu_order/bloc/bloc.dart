@@ -36,11 +36,14 @@ class MenuOrderLoaded extends MenuOrderState {
   final String? message;
   // bool gibt an, ob Bestellung gespeichert wurde
   final bool saving;
+  // Bereits gespeicherte Bestellung des Nutzers.
+  final FoodOrder? order;
 
   const MenuOrderLoaded({
     required this.session,
     required this.service,
     required this.items,
+    required this.order,
     required this.selectedIds,
     this.message,
     this.saving = false,
@@ -49,6 +52,7 @@ class MenuOrderLoaded extends MenuOrderState {
   // Erstellt neue Version des aktuellen States (ersetzt Werte mit neuen und die anderen bleiben bestehen)
   MenuOrderLoaded copyWith({
     Set<String>? selectedIds,
+    bool clearOrder = false,
     String? message,
     bool? saving,
   }) {
@@ -56,6 +60,7 @@ class MenuOrderLoaded extends MenuOrderState {
       session: session,
       service: service,
       items: items,
+      order: clearOrder ? null : order ?? this.order,
       selectedIds: selectedIds ?? this.selectedIds,
       message: message,
       saving: saving ?? this.saving,
@@ -68,6 +73,7 @@ class MenuOrderLoaded extends MenuOrderState {
     session?.id,
     service?.id,
     items,
+    order?.id,
     selectedIds,
     message,
     saving,
@@ -99,6 +105,7 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
     on<MenuOrderLoadRequested>(_onLoad);
     on<MenuOrderItemToggled>(_onToggleItem);
     on<MenuOrderSubmitRequested>(_onSubmit);
+    on<MenuOrderDeleteRequested>(_onDelete);
   }
   // Diese Methode lädt alle Daten, die der Screen benötigt
   Future<void> _onLoad(
@@ -127,6 +134,7 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
             session: null,
             service: null,
             items: [],
+            order: null,
             selectedIds: {},
           ),
         );
@@ -141,6 +149,7 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
             session: session,
             service: null,
             items: const [],
+            order: null,
             selectedIds: const {},
             message: 'Noch keine Essensrichtung gewählt.',
           ),
@@ -156,6 +165,7 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
             session: session,
             service: null,
             items: const [],
+            order: null,
             selectedIds: const {},
             message: 'Kein passender Lieferdienst gefunden.',
           ),
@@ -168,13 +178,29 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
           deliveryServiceId: StringFilter(equals: service.id),
         ),
       );
-      // Beim erfolgreichen Laden kann der Lieferdienst und die Gerichte ausgegeben werden
+
+      // Bereits gespeicherte Bestellung des aktuellen Users für diese Session laden.
+      final order = await db.foodOrder.findFirst(
+        where: FoodOrderWhereInput(
+          sessionId: StringFilter(equals: session.id),
+          userId: StringFilter(equals: currentUserId),
+        ),
+      );
+
+      // Falls eine Bestellung existiert, werden die gespeicherten Menü-IDs
+      // wieder in ein Set umgewandelt. Dadurch sind die Checkboxen wieder aktiv
+      // und die Bestellung kann im UI angezeigt werden.
+      final selectedIds = order == null
+          ? <String>{}
+          : _decodeMenuItemIds(order.menuItemIds);
+
       emit(
         MenuOrderLoaded(
           session: session,
           service: service,
           items: items,
-          selectedIds: const {},
+          order: order,
+          selectedIds: selectedIds,
         ),
       );
     } catch (e) {
@@ -227,13 +253,25 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
     // Im Schema (die lokale Datenbank) ist FoodOrder.menuItemIds als String definiert
     // Daher müssen die Menü-IDs als JSON-Array gespeichert werden
     try {
-      await db.foodOrder.create(
-        data: CreateFoodOrderInput(
-          sessionId: current.session!.id,
-          userId: currentUserId,
-          menuItemIds: jsonEncode(current.selectedIds.toList()),
-        ),
-      );
+      final encodedIds = jsonEncode(current.selectedIds.toList());
+
+      // Wenn noch keine Bestellung existiert, wird ein neuer FoodOrder angelegt.
+      if (current.order == null) {
+        await db.foodOrder.create(
+          data: CreateFoodOrderInput(
+            sessionId: current.session!.id,
+            userId: currentUserId,
+            menuItemIds: encodedIds,
+          ),
+        );
+      } else {
+        // Wenn bereits eine Bestellung existiert, wird diese aktualisiert.
+        // Dadurch entstehen keine doppelten Bestellungen pro User und Session.
+        await db.foodOrder.update(
+          where: FoodOrderWhereUniqueInput(id: current.order!.id),
+          data: UpdateFoodOrderInput(menuItemIds: encodedIds),
+        );
+      }
 
       // Nach erfolreichem Spiechern muss der Screen erneut geladen werden
       await _onLoad(MenuOrderLoadRequested(groupId), emit);
@@ -250,6 +288,43 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
           saving: false,
           message: 'Bestellung fehlgeschlagen: $e',
         ),
+      );
+    }
+  }
+
+  // Methode für das Löschen der aufgegebenen Bestellung
+  Future<void> _onDelete(
+    MenuOrderDeleteRequested event,
+    Emitter<MenuOrderState> emit,
+  ) async {
+    final current = state;
+
+    if (current is! MenuOrderLoaded) return;
+
+    // Wenn noch keine Bestellung existiert, kann sie auch nicht gelöscht werden.
+    if (current.order == null) {
+      emit(current.copyWith(message: 'Es gibt keine Bestellung zum Löschen.'));
+      return;
+    }
+
+    emit(current.copyWith(saving: true, message: null));
+    // Bestellung aus der Datenbank löschen
+    try {
+      await db.foodOrder.delete(
+        where: FoodOrderWhereUniqueInput(id: current.order!.id),
+      );
+
+      emit(
+        current.copyWith(
+          clearOrder: true,
+          selectedIds: const {},
+          saving: false,
+          message: 'Bestellung gelöscht.',
+        ),
+      );
+    } catch (e) {
+      emit(
+        current.copyWith(saving: false, message: 'Löschen fehlgeschlagen: $e'),
       );
     }
   }
@@ -293,8 +368,21 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
         return service;
       }
     }
-
     // Gibt null zurück, wenn kein Lieferdienst gefunden wurde.
     return null;
+  }
+
+  Set<String> _decodeMenuItemIds(String value) {
+    try {
+      final decoded = jsonDecode(value);
+
+      if (decoded is! List) {
+        return {};
+      }
+
+      return decoded.whereType<String>().toSet();
+    } catch (_) {
+      return {};
+    }
   }
 }
