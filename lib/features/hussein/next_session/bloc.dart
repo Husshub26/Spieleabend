@@ -28,6 +28,11 @@ class NextSessionLoaded extends NextSessionState {
   /// active in the rotation.
   final User? proposedHost;
 
+  /// All group members (active + paused in the rotation), sorted by
+  /// [User.displayName]. Used as the option set for the ad-hoc host
+  /// override on session create.
+  final List<User> members;
+
   /// Last 5 finished sessions, newest first.
   final List<GameSession> history;
 
@@ -39,6 +44,7 @@ class NextSessionLoaded extends NextSessionState {
     required this.session,
     required this.host,
     required this.proposedHost,
+    required this.members,
     required this.history,
     this.errorMessage,
     this.infoMessage,
@@ -48,6 +54,7 @@ class NextSessionLoaded extends NextSessionState {
     GameSession? session,
     User? host,
     User? proposedHost,
+    List<User>? members,
     List<GameSession>? history,
     String? errorMessage,
     String? infoMessage,
@@ -58,6 +65,7 @@ class NextSessionLoaded extends NextSessionState {
       session: clearSession ? null : (session ?? this.session),
       host: clearSession ? null : (host ?? this.host),
       proposedHost: proposedHost ?? this.proposedHost,
+      members: members ?? this.members,
       history: history ?? this.history,
       errorMessage: clearMessages ? null : (errorMessage ?? this.errorMessage),
       infoMessage: clearMessages ? null : (infoMessage ?? this.infoMessage),
@@ -69,6 +77,7 @@ class NextSessionLoaded extends NextSessionState {
     session,
     host?.id,
     proposedHost?.id,
+    members.map((u) => u.id).toList(),
     history,
     errorMessage,
     infoMessage,
@@ -108,7 +117,12 @@ class NextSessionBloc extends Bloc<NextSessionEvent, NextSessionState> {
   }) async {
     _groupId = event.groupId;
     try {
-      emit(const NextSessionLoading());
+      // Only emit Loading on the first load; subsequent reloads (after
+      // create/edit/finish) preserve the previous Loaded state until the
+      // new data arrives so the UI doesn't flash.
+      if (state is! NextSessionLoaded) {
+        emit(const NextSessionLoading());
+      }
       final session = await db.gameSession.findFirst(
         where: GameSessionWhereInput(
           groupId: StringFilter(equals: event.groupId),
@@ -127,6 +141,22 @@ class NextSessionBloc extends Bloc<NextSessionEvent, NextSessionState> {
           : await db.user.findUnique(
               where: UserWhereUniqueInput(id: proposedHostId),
             );
+      final memberships = await db.groupMembership.findMany(
+        where: GroupMembershipWhereInput(
+          groupId: StringFilter(equals: event.groupId),
+        ),
+      );
+      final members = <User>[];
+      for (final m in memberships) {
+        final u = await db.user.findUnique(
+          where: UserWhereUniqueInput(id: m.userId),
+        );
+        if (u != null) members.add(u);
+      }
+      members.sort(
+        (a, b) =>
+            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+      );
       final finished = await db.gameSession.findMany(
         where: GameSessionWhereInput(
           groupId: StringFilter(equals: event.groupId),
@@ -140,6 +170,7 @@ class NextSessionBloc extends Bloc<NextSessionEvent, NextSessionState> {
           session: session,
           host: host,
           proposedHost: proposedHost,
+          members: members,
           history: finished,
           errorMessage: errorMessage,
           infoMessage: infoMessage,
@@ -170,7 +201,24 @@ class NextSessionBloc extends Bloc<NextSessionEvent, NextSessionState> {
         );
         return;
       }
-      final hostId = await _computeNextHostId(event.groupId);
+      if (event.hostIdOverride != null) {
+        final mship = await db.groupMembership.findFirst(
+          where: GroupMembershipWhereInput(
+            groupId: StringFilter(equals: event.groupId),
+            userId: StringFilter(equals: event.hostIdOverride!),
+          ),
+        );
+        if (mship == null) {
+          await _onLoad(
+            NextSessionLoadRequested(event.groupId),
+            emit,
+            errorMessage: 'Die gewählte Person ist nicht in dieser Gruppe.',
+          );
+          return;
+        }
+      }
+      final hostId =
+          event.hostIdOverride ?? await _computeNextHostId(event.groupId);
       if (hostId == null) {
         await _onLoad(
           NextSessionLoadRequested(event.groupId),
