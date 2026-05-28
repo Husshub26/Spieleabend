@@ -130,6 +130,7 @@ class _Body extends StatelessWidget {
                       ],
                     ),
                   ),
+                // Button für das Löschen der Bestellung einfügen
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,

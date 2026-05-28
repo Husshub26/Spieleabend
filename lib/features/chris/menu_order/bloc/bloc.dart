@@ -255,14 +255,6 @@ class MenuOrderBloc extends Bloc<MenuOrderEvent, MenuOrderState> {
     try {
       final encodedIds = jsonEncode(current.selectedIds.toList());
 
-      await db.foodOrder.create(
-        data: CreateFoodOrderInput(
-          sessionId: current.session!.id,
-          userId: currentUserId,
-          menuItemIds: jsonEncode(current.selectedIds.toList()),
-        ),
-      );
-
       // Wenn noch keine Bestellung existiert, wird ein neuer FoodOrder angelegt.
       if (current.order == null) {
         await db.foodOrder.create(
