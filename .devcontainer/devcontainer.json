@@ -7,6 +7,14 @@
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace",
     "remoteUser": "root",
+    // Web debug port from the README: `flutter run -d web-server --web-port 6333`
+    "forwardPorts": [6333],
+    "portsAttributes": {
+      "6333": {
+        "label": "Flutter web (debug)",
+        "onAutoForward": "openBrowser"
+      }
+    },
     "features": {
       "ghcr.io/devcontainers/features/node:1": {
         "version": "20"

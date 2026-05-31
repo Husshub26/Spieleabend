@@ -46,3 +46,6 @@ app.*.map.json
 
 # Node tooling for commit hooks
 node_modules/
+
+# Local tooling (auto-generated)
+.memsearch/
